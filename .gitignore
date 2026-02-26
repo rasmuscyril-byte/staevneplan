@@ -32,3 +32,5 @@ start-dev.js
 
 # Claude
 .claude/
+
+.vercel

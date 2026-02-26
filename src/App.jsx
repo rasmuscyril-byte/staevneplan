@@ -15,14 +15,27 @@ const HelpTip = ({ text, position = 'top' }) => (
   </span>
 );
 
-// --- GUIDE-TRIN TIL ONBOARDING WIZARD ---
+// --- TOOLTIP WRAPPER – pæn taleboble der vises ved hover ---
+const Tip = ({ text, position = 'top', children }) => (
+  <span className="relative group/ttip inline-flex">
+    {children}
+    <span className={`absolute ${position === 'top' ? 'bottom-full mb-2' : position === 'bottom' ? 'top-full mt-2' : position === 'left' ? 'right-full mr-2 top-1/2 -translate-y-1/2' : 'left-full ml-2 top-1/2 -translate-y-1/2'} ${position === 'top' || position === 'bottom' ? 'left-1/2 -translate-x-1/2' : ''} px-2.5 py-1.5 bg-gray-800 text-white text-[11px] rounded-lg shadow-lg opacity-0 group-hover/ttip:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-[70] leading-snug max-w-xs`} style={{ whiteSpace: 'normal', width: 'max-content', maxWidth: '220px' }}>
+      {text}
+      <span className={`absolute ${position === 'top' ? 'top-full left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800' : position === 'bottom' ? 'bottom-full left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800' : position === 'left' ? 'left-full top-1/2 -translate-y-1/2 border-t-4 border-b-4 border-l-4 border-transparent border-l-gray-800' : 'right-full top-1/2 -translate-y-1/2 border-t-4 border-b-4 border-r-4 border-transparent border-r-gray-800'} w-0 h-0`}></span>
+    </span>
+  </span>
+);
+
+// --- GUIDE-TRIN TIL ONBOARDING WIZARD ("Bolden") ---
 const GUIDE_STEPS = [
-  { titel: 'Importer rækker', tab: 'rækker', tekst: 'Start med at importere dine turneringsrækker. Klik "Importer rækker" i sidepanelet til venstre, og upload din RækkePuljeOversigt .xls fra foda.' },
-  { titel: 'Upload ønsker', tab: 'ønsker', tekst: 'Upload klubbernes ønskefil her. Ønsker klassificeres automatisk som regler (f.eks. undgå vært, samme pulje).' },
-  { titel: 'Sæt kriterier', tab: 'kriterier', tekst: 'Vælg regler der styrer fordelingen — f.eks. undgå samme klub i pulje, banekapacitet og geografisk nærhed.' },
-  { titel: 'Fordel hold', tab: 'rækker', tekst: 'Klik "Fordel ALLE" i toolbaren øverst for at fordele alle hold i puljer automatisk.' },
-  { titel: 'Validér', tab: 'rækker', tekst: 'Klik "Validér" for at tjekke at fordelingen overholder regler, banekapacitet og ønsker.' },
-  { titel: 'Gem eller PDF', tab: 'rækker', tekst: 'Gem dit arbejde med "Gem"-knappen øverst til højre, eller eksporter stævneplanen som PDF.' },
+  { titel: 'Hej makker — jeg er Bolden!', tab: 'rækker', tekst: <>I fodbold får man frispark for at rive i trøjen — men ikke her! Du kan rive rundt i mig lige så meget du vil. Prøv at trække mig rundt med musen, så du kan se dig omkring bagved. Du kan også trække i mine kanter og hjørner for at gøre mig større eller mindre — helt som det passer dig! Når du er klar, trykker du bare <strong>Giv bolden op!</strong> — så guider jeg dig igennem det hele!</> },
+  { titel: 'Hent dine rækker ind', tab: 'rækker', tekst: <>Første skridt på banen! Hent dine turneringsrækker ind i programmet. Klik på <strong>Hent rækker ind</strong> i menuen til venstre, og vælg den fil du har hentet fra foda (den hedder typisk "RækkePuljeOversigt").</> },
+  { titel: 'Hvad ønsker klubberne?', tab: 'ønsker', tekst: <>Godt tackle! Nu skal vi have klubbernes ønsker med. Klik på <strong>Indlæs ønskefil</strong> herover — jeg finder selv ud af hvad klubberne vil, f.eks. om de gerne vil være vært, eller om bestemte hold skal i samme pulje.</> },
+  { titel: 'Sæt spillereglerne', tab: 'kriterier', tekst: <>Her bestemmer du reglerne for kampen! Vælg f.eks. at hold fra samme klub ikke må havne i samme pulje, eller at holdene skal samles så familierne ikke skal køre for langt. Når du er klar, tryk <strong>FREM!</strong></> },
+  { titel: 'Fløjt — fordel holdene!', tab: 'rækker', tekst: <>Nu er det showtime! Klik på <strong>Fordel ALLE</strong> i knapperne øverst, og lad mig fordele alle holdene i puljer. Jeg tager hensyn til alle dine regler og ønsker.</> },
+  { titel: 'VAR-tjek!', tab: 'rækker', tekst: <>Lige som VAR i en rigtig kamp — lad os tjekke at alt er i orden! Klik på <strong>Tjek</strong> for at sikre at værterne har nok baner, og at klubbernes ønsker er opfyldt.</> },
+  { titel: 'Hent din stævneplan!', tab: 'rækker', tekst: <>Flot spillet, makker! Nu kan du hente den færdige stævneplan som et dokument du kan printe eller sende videre — klik på <strong>Hent dokument</strong> øverst til højre. Så får du hele planen pænt og klart!</> },
+  { titel: 'Gem dit arbejde', tab: 'rækker', tekst: <>Sidste fløjt! Husk at gemme dit arbejde med <strong>Gem</strong> øverst til højre, så du kan åbne det igen en anden dag med <strong>Åbn</strong>. Og husk — der gives hverken gule eller røde kort herinde! Du kan ikke gøre noget forkert. Så kig dig omkring, tryk på alt hvad du har lyst til, og leg med det. Vi ses til næste kamp!</> },
 ];
 
 // --- DEFINITION AF MASKIN-REGLER FRA ØNSKER ---
@@ -1154,12 +1167,14 @@ const BanerView = ({ clubs, setClubs }) => {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <button 
+            <Tip text="Tilføj en ny klub til stævneplanen" position="bottom">
+            <button
               onClick={handleAddClick}
               className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-colors shadow-sm"
             >
               <Plus size={18} /> Tilføj klub
             </button>
+            </Tip>
             <div className="bg-green-50 text-green-800 border border-green-200 px-4 py-2 rounded-lg font-bold text-sm hidden sm:block">
               {filteredClubs.length} {filteredClubs.length === 1 ? 'klub' : 'klubber'} fundet
             </div>
@@ -1816,7 +1831,7 @@ const SortIcon = ({ columnKey, sortConfig }) => {
 
 export default function App() {
   const [criteria, setCriteria] = useState({ avoidSameClub: true, autoAssignHost: true, hostGetsMostMatches: true, avoidMultipleHostsOnSameDate: true, avoidPreviousHosts: true, checkBaneCapacity: true, avoidInsufficientBaneCapacity: true, prioritizeNewHostInAgeGroup: true, preferGeographicProximity: true, defaultPoolStartTime: '10:00' });
-  const [hostCriteriaPriority, setHostCriteriaPriority] = useState(['avoidMultipleHostsOnSameDate', 'avoidPreviousHosts', 'avoidInsufficientBaneCapacity', 'prioritizeNewHostInAgeGroup']);
+  const [hostCriteriaPriority, setHostCriteriaPriority] = useState(['avoidInsufficientBaneCapacity', 'avoidMultipleHostsOnSameDate', 'avoidPreviousHosts', 'prioritizeNewHostInAgeGroup']);
   const [defaultTemplates, setDefaultTemplates] = useState(initialDefaultTemplates);
   const [customHostKeys, setCustomHostKeys] = useState({});
   const [activeTab, setActiveTab] = useState('rækker'); 
@@ -1867,14 +1882,15 @@ export default function App() {
   const [poolSettingsPrompt, setPoolSettingsPrompt] = useState({ isOpen: false, poolId: null, poolName: '', criteria: null });
   const [hostModePopup, setHostModePopup] = useState({ isOpen: false, poolId: null, poolName: '', currentMode: 'host', organizerClub: null });
   const [infoModal, setInfoModal] = useState({ isOpen: false, title: '', message: '' });
-  const [createPoolsPrompt, setCreatePoolsPrompt] = useState({ isOpen: false, count: 1, scope: null });
+  const [createPoolsPrompt, setCreatePoolsPrompt] = useState({ isOpen: false, count: 1, scope: null, mode: 'randomize' });
   const [templatePrompt, setTemplatePrompt] = useState({ isOpen: false, poolId: null, templateKey: null });
   const [matrixPreview, setMatrixPreview] = useState({ isOpen: false, templateKey: null });
   const [multiPoolCompare, setMultiPoolCompare] = useState(null); // null eller { club }
   const [compareExpandedCols, setCompareExpandedCols] = useState(new Set());
   const [showTransferPrompt, setShowTransferPrompt] = useState(false);
-  const [guideStep, setGuideStep] = useState(1); // 1-6 = aktivt trin, null = lukket
+  const [guideStep, setGuideStep] = useState(1); // 1-7 = aktivt trin, null = lukket
   const [guideDrag, setGuideDrag] = useState({ x: 0, y: 0 });
+  const [guideSize, setGuideSize] = useState({ w: 520, h: 0 }); // h=0 = auto height
 
   const [transferTeamPrompt, setTransferTeamPrompt] = useState({ isOpen: false, teamId: null, teamName: '' });
   const [selectedTransferRow, setSelectedTransferRow] = useState("");
@@ -1965,6 +1981,7 @@ export default function App() {
               hostMode: p.hostMode || 'host',
               organizerClub: p.organizerClub !== undefined ? p.organizerClub : null,
               formatOverride: p.formatOverride || null,
+              isLocked: p.isLocked || false,
               specificCriteria: p.specificCriteria ? { ...p.specificCriteria, preferGeographicProximity: p.specificCriteria.preferGeographicProximity !== undefined ? p.specificCriteria.preferGeographicProximity : true, startTime: p.specificCriteria.startTime !== undefined ? p.specificCriteria.startTime : null } : undefined
             }))
           }));
@@ -1997,7 +2014,7 @@ export default function App() {
 
         if (projectData.data && projectData.data.length > 0) setActiveRowId(projectData.data[0].id);
       } catch (err) {
-        setInfoModal({ isOpen: true, title: 'Fejl', message: 'Kunne ikke indlæse projektfilen. Er det en gyldig .json fil?' });
+        setInfoModal({ isOpen: true, title: 'Noget gik galt', message: 'Filen kunne ikke åbnes. Er du sikker på at det er en gemt stævneplan-fil?' });
       }
     };
     reader.readAsText(file);
@@ -2261,7 +2278,7 @@ export default function App() {
                  }
               }
               errors.push({
-                  message: `Klubkonflikt: ${club} har flere hold.`,
+                  message: `${club} har flere hold i samme pulje.`,
                   clubs: [club],
                   resolved: isResolved
               });
@@ -2524,7 +2541,7 @@ export default function App() {
                   rowName: entry.rowName,
                   poolId: entry.poolId,
                   poolName: entry.poolName,
-                  message: `Banekapacitet overskredet: ${clubName} har ${capacity} ${formatLabel}-baner, men ${totalBaner} er påkrævet d. ${date} (denne pulje bruger ${entry.baneCount})`,
+                  message: `Ikke nok baner: ${clubName} har ${capacity} ${formatLabel}-baner, men der skal bruges ${totalBaner} baner d. ${date} (denne pulje bruger ${entry.baneCount})`,
                   resolved: false,
                   hostClub: clubName,
                   date,
@@ -2909,7 +2926,7 @@ export default function App() {
       return {
         ...row,
         columnOrder: [...currentOrder, newPoolId],
-        pools: [...row.pools, { id: newPoolId, name: `Pulje ${row.pools.length + 1}`, specificCriteria: { ...defaultSpecificCriteria }, hostMode: 'host', organizerClub: null, formatOverride: null }]
+        pools: [...row.pools, { id: newPoolId, name: `Pulje ${row.pools.length + 1}`, specificCriteria: { ...defaultSpecificCriteria }, hostMode: 'host', organizerClub: null, formatOverride: null, isLocked: false }]
       };
     }));
   };
@@ -2995,6 +3012,23 @@ export default function App() {
       return { ...row, teams: row.teams.map(t =>
         t.id === teamId ? { ...t, isPinned: !t.isPinned } : t
       )};
+    }));
+  };
+
+  const handleTogglePoolLock = (poolId) => {
+    setData(prevData => prevData.map(row => {
+      if (row.id !== activeRowId) return row;
+      const pool = row.pools.find(p => p.id === poolId);
+      if (!pool) return row;
+      const newLocked = !pool.isLocked;
+      return {
+        ...row,
+        pools: row.pools.map(p => p.id === poolId ? { ...p, isLocked: newLocked } : p),
+        teams: row.teams.map(t => {
+          if (t.poolId !== poolId || t.isBye) return t;
+          return { ...t, isPinned: newLocked };
+        })
+      };
     }));
   };
 
@@ -3245,6 +3279,7 @@ export default function App() {
     const estimatedPoolSize = Math.max(1, Math.ceil(totalRealTeams / row.pools.length));
 
     row.pools.forEach(pool => {
+      if (pool.isLocked) return; // Låst pulje — bevar eksisterende vært
       if ((pool.hostMode || 'host') === 'organizer') return;
       const pData = poolData.find(pd => pd.id === pool.id);
       if (!pData || !pData.autoAssignHost) return;
@@ -3387,7 +3422,9 @@ export default function App() {
       const wantsSamePool = teamWishes.some(w => w.ruleType === 'SAME_POOL');
       const clubsToAvoid = teamWishes.filter(w => w.ruleType === 'AVOID_CLUB').map(w => w.text.toLowerCase());
 
+      const lockedPoolIds = new Set(row.pools.filter(p => p.isLocked).map(p => p.id));
       let validPools = poolData.filter(p => {
+        if (lockedPoolIds.has(p.id)) return false; // Låst pulje — modtager ikke nye hold
         if (p.clubSet.has(team.club) && wantsSamePool) return true;
         if (p.avoidSameClub && p.clubSet.has(team.club)) return false;
 
@@ -3512,6 +3549,7 @@ export default function App() {
     // === PHASE 4: AUTO-FILL SMALL POOLS WITH BYES ===
     newTeams = newTeams.filter(t => !(t.isBye && t.name === 'Oversidder'));
     row.pools.forEach(pool => {
+      if (pool.isLocked) return; // Låst pulje — rør ikke ved byes
       const realTeamsInPool = newTeams.filter(t => t.poolId === pool.id && !t.isBye).length;
       const minPoolSize = row.name.includes('3:3') ? 3 : 4;
       if (realTeamsInPool > 0 && realTeamsInPool < minPoolSize) {
@@ -3528,6 +3566,170 @@ export default function App() {
             fodaKey: null
           });
         }
+      }
+    });
+
+    const is3v3 = row.name.includes('3:3');
+    return recalculateAllRowKeys({ ...row, teams: newTeams }, globalCriteria, is3v3 ? defaultTemplates3v3 : defaultTemplates, is3v3 ? customHostKeys3v3 : customHostKeys, is3v3 ? defaultTemplates : defaultTemplates3v3, is3v3 ? customHostKeys : customHostKeys3v3);
+  };
+
+  // --- Geografisk spredning: sortér kandidater så de der er længst fra allerede valgte værter kommer først ---
+  const applyGeographicSpreadScoring = (candidates, chosenHostsMap) => {
+    const chosenCoords = [];
+    chosenHostsMap.forEach(({ team }) => {
+      const coord = getClubCoordinates(team.club);
+      if (coord) chosenCoords.push(coord);
+    });
+    if (chosenCoords.length === 0) return candidates;
+    const scored = candidates.map(t => {
+      const coord = getClubCoordinates(t.club);
+      if (!coord) return { team: t, minDist: 0 };
+      const minDist = Math.min(...chosenCoords.map(c => haversineDistance(coord, c)));
+      return { team: t, minDist };
+    });
+    scored.sort((a, b) => b.minDist - a.minDist);
+    return scored.map(s => s.team);
+  };
+
+  // --- Fordel KUN værtsklubber til puljer (uden at flytte øvrige hold) ---
+  const distributeHostsOnly = (row, globalCriteria, allRowsData, previousHistory) => {
+    if (row.pools.length === 0) return row;
+    const applicableWishes = getApplicableWishes(row);
+
+    const dateMatch = row.name.match(/ (\d{1,2}\/\d{1,2})/);
+    const dateLabel = dateMatch ? dateMatch[1] : null;
+    const rowName = row.name.replace(/\s*-?\s*\d{1,2}\/\d{1,2}.*/, '').trim() || 'Ikke-kategoriseret';
+
+    const existingHostsOnDate = new Set();
+    if (allRowsData && dateLabel) {
+      allRowsData.forEach(r => {
+        if (r.id === row.id) return;
+        const rDateMatch = r.name.match(/\d{1,2}\/\d{1,2}/);
+        if (rDateMatch && rDateMatch[0] === dateLabel) {
+          r.teams.forEach(t => { if (t.isHost && t.poolId !== null && !t.isBye) existingHostsOnDate.add(t.club); });
+        }
+      });
+    }
+    // Tilføj eksisterende værter fra denne række
+    row.teams.forEach(t => { if (t.isHost && t.poolId !== null && !t.isBye) existingHostsOnDate.add(t.club); });
+
+    let newTeams = row.teams.map(t => ({ ...t }));
+    const hostsChosen = new Map(); // poolId -> { team, isForced }
+    const chosenHostIds = new Set();
+    const totalRealTeams = newTeams.filter(t => !t.isBye).length;
+    const estimatedPoolSize = Math.max(1, Math.ceil(totalRealTeams / row.pools.length));
+
+    // Alle kandidat-hold (ikke-bye, ikke allerede vært i en pulje)
+    const candidateTeams = newTeams.filter(t => !t.isBye);
+
+    // Shuffled kandidater for tilfældighed
+    const shuffledCandidates = [...candidateTeams].sort(() => Math.random() - 0.5);
+
+    row.pools.forEach(pool => {
+      if (pool.isLocked) return;
+      if ((pool.hostMode || 'host') === 'organizer') return;
+      const specific = pool.specificCriteria || { useSpecific: false };
+      const autoAssignHost = specific.useSpecific ? specific.autoAssignHost : globalCriteria.autoAssignHost;
+      if (!autoAssignHost) return;
+
+      // Skip hvis puljen allerede har en vært
+      const existingHost = newTeams.find(t => t.poolId === pool.id && t.isHost && !t.isBye);
+      if (existingHost) return;
+
+      let potentialHosts = shuffledCandidates.filter(t => !chosenHostIds.has(t.id));
+      if (potentialHosts.length === 0) return;
+
+      // Fjern AVOID_HOST
+      potentialHosts = potentialHosts.filter(t => {
+        const tWishes = applicableWishes.filter(w => matchClubName(t.club, w.club));
+        return !tWishes.some(w => w.ruleType === 'AVOID_HOST');
+      });
+
+      // Tjek FORCE_HOST
+      const forcedHosts = potentialHosts.filter(t => {
+        const tWishes = applicableWishes.filter(w => matchClubName(t.club, w.club));
+        return tWishes.some(w => w.ruleType === 'FORCE_HOST');
+      });
+
+      if (forcedHosts.length > 0) {
+        hostsChosen.set(pool.id, { team: forcedHosts[0], isForced: true });
+        chosenHostIds.add(forcedHosts[0].id);
+      } else {
+        // Anvend standard-filtre i prioritet
+        const avoidMultiDate = specific.useSpecific && specific.avoidMultipleHostsOnSameDate !== undefined ? specific.avoidMultipleHostsOnSameDate : globalCriteria.avoidMultipleHostsOnSameDate;
+        const avoidPrevHosts = specific.useSpecific && specific.avoidPreviousHosts !== undefined ? specific.avoidPreviousHosts : globalCriteria.avoidPreviousHosts;
+        const avoidInsuffBane = specific.useSpecific && specific.avoidInsufficientBaneCapacity !== undefined ? specific.avoidInsufficientBaneCapacity : globalCriteria.avoidInsufficientBaneCapacity;
+        const prioritizeNewHost = specific.useSpecific && specific.prioritizeNewHostInAgeGroup !== undefined ? specific.prioritizeNewHostInAgeGroup : globalCriteria.prioritizeNewHostInAgeGroup;
+
+        const hostFilters = {
+          avoidMultipleHostsOnSameDate: (list) => {
+            if (!dateLabel || !avoidMultiDate) return list;
+            const result = list.filter(t => !existingHostsOnDate.has(t.club));
+            return result.length > 0 ? result : list;
+          },
+          avoidPreviousHosts: (list) => {
+            if (!avoidPrevHosts || !previousHistory) return list;
+            const result = list.filter(t => !previousHistory.some(p => p.rowName === rowName && p.club === t.club));
+            return result.length > 0 ? result : list;
+          },
+          avoidInsufficientBaneCapacity: (list) => {
+            if (!avoidInsuffBane) return list;
+            const formatField = getRowFormat(row.name);
+            const is3v3r = row.name.includes('3:3');
+            const matrices = is3v3r ? fodaMatrices3v3 : fodaMatrices;
+            const dTempl = is3v3r ? defaultTemplates3v3 : defaultTemplates;
+            const tKey = (pool.templateKey && matrices[pool.templateKey]?.size === estimatedPoolSize)
+              ? pool.templateKey
+              : (dTempl[estimatedPoolSize] || Object.keys(matrices).find(k => matrices[k].size === estimatedPoolSize));
+            const baneCount = getBaneCountFromTemplate(tKey);
+            const result = list.filter(t => {
+              const clubData = clubs.find(c => matchClubName(c.name, t.club));
+              if (!clubData) return true;
+              return parseNumber(clubData[formatField]) >= baneCount;
+            });
+            return result.length > 0 ? result : list;
+          },
+          prioritizeNewHostInAgeGroup: (list) => {
+            if (!prioritizeNewHost) return list;
+            const ageGroupMatch = row.name.match(/^(U\d+)/i);
+            if (!ageGroupMatch || !allRowsData) return list;
+            const ageGroup = ageGroupMatch[1].toUpperCase();
+            const hostsInAgeGroup = new Set();
+            allRowsData.forEach(r => {
+              const rAge = r.name.match(/^(U\d+)/i);
+              if (rAge && rAge[1].toUpperCase() === ageGroup) {
+                r.teams.forEach(t => { if (t.isHost && t.poolId !== null && !t.isBye) hostsInAgeGroup.add(t.club); });
+              }
+            });
+            hostsChosen.forEach(({ team: hTeam }) => hostsInAgeGroup.add(hTeam.club));
+            const result = list.filter(t => !hostsInAgeGroup.has(t.club));
+            return result.length > 0 ? result : list;
+          }
+        };
+
+        let filteredHosts = [...potentialHosts];
+        hostCriteriaPriority.forEach(key => {
+          if (hostFilters[key]) filteredHosts = hostFilters[key](filteredHosts);
+        });
+
+        // Geografisk spredning: foretræk værter der er langt fra allerede valgte
+        if (filteredHosts.length > 1 && hostsChosen.size > 0) {
+          filteredHosts = applyGeographicSpreadScoring(filteredHosts, hostsChosen);
+        }
+
+        if (filteredHosts.length > 0) {
+          hostsChosen.set(pool.id, { team: filteredHosts[0], isForced: false });
+          chosenHostIds.add(filteredHosts[0].id);
+        }
+      }
+    });
+
+    // Placer værter i puljer
+    hostsChosen.forEach(({ team: hostTeam, isForced }, poolId) => {
+      const idx = newTeams.findIndex(t => t.id === hostTeam.id);
+      if (idx !== -1) {
+        newTeams[idx] = { ...newTeams[idx], poolId, isHost: true, isPinned: isForced ? true : newTeams[idx].isPinned };
+        existingHostsOnDate.add(hostTeam.club);
       }
     });
 
@@ -3561,7 +3763,7 @@ export default function App() {
               id: `p${Date.now()}_${row.id}_${idx}`,
               name: `Pulje ${idx + 1}`,
               specificCriteria: { ...defaultSpecificCriteria },
-              hostMode: 'host', organizerClub: null, formatOverride: null
+              hostMode: 'host', organizerClub: null, formatOverride: null, isLocked: false
             }));
             row.columnOrder = ['unassigned', ...row.pools.map(p => p.id)];
             dataWithPools[i] = row;
@@ -3596,7 +3798,7 @@ export default function App() {
   };
 
   const handleCreatePoolsAndRandomize = () => {
-    const { count, scope } = createPoolsPrompt;
+    const { count, scope, mode } = createPoolsPrompt;
     setData(prevData => {
       // Først: opret puljer
       let dataWithPools = [...prevData];
@@ -3610,12 +3812,23 @@ export default function App() {
               id: `p${Date.now()}_${currentRow.id}_${idx}`,
               name: `Pulje ${idx + 1}`,
               specificCriteria: { ...defaultSpecificCriteria },
-              hostMode: 'host', organizerClub: null, formatOverride: null
+              hostMode: 'host', organizerClub: null, formatOverride: null, isLocked: false
             }));
             currentRow.columnOrder = ['unassigned', ...currentRow.pools.map(p => p.id)];
           }
         }
         dataWithPools[i] = currentRow;
+      }
+
+      // Hvis mode er 'hostsOnly', kør kun værtsklub-fordeling
+      if (mode === 'hostsOnly') {
+        let newData = [...dataWithPools];
+        for (let i = 0; i < newData.length; i++) {
+          if (scope === 'active' && newData[i].id !== activeRowId) continue;
+          if (newData[i].pools.length === 0) continue;
+          newData[i] = distributeHostsOnly(newData[i], criteria, newData, previousTournaments);
+        }
+        return newData;
       }
 
       // Derefter: retry-randomisering (op til 3 forsøg)
@@ -3634,8 +3847,8 @@ export default function App() {
 
       return bestData || dataWithPools;
     });
-    setCreatePoolsPrompt({ isOpen: false, count: 1, scope: null });
-    setValidationModal({ isOpen: true, scope });
+    setCreatePoolsPrompt({ isOpen: false, count: 1, scope: null, mode: 'randomize' });
+    if (mode !== 'hostsOnly') setValidationModal({ isOpen: true, scope });
   };
 
   const handleRandomizeClick = (scope) => {
@@ -3645,7 +3858,7 @@ export default function App() {
 
     if (!hasPools) {
       const suggestedCount = getOptimalPoolConfig(activeRow.teams.filter(t => !t.isBye).length).poolCount;
-      setCreatePoolsPrompt({ isOpen: true, count: Math.max(1, suggestedCount), scope });
+      setCreatePoolsPrompt({ isOpen: true, count: Math.max(1, suggestedCount), scope, mode: 'randomize' });
       return;
     }
 
@@ -3654,6 +3867,25 @@ export default function App() {
     } else {
       executeRandomizeWithRetry('all', scope);
     }
+  };
+
+  const handleDistributeHostsOnly = (scope) => {
+    const rowsToCheck = scope === 'active' ? [activeRow] : data;
+    const hasPools = rowsToCheck.some(r => r.pools.length > 0);
+    if (!hasPools) {
+      const suggestedCount = getOptimalPoolConfig(activeRow.teams.filter(t => !t.isBye).length).poolCount;
+      setCreatePoolsPrompt({ isOpen: true, count: Math.max(1, suggestedCount), scope, mode: 'hostsOnly' });
+      return;
+    }
+    setData(prevData => {
+      let newData = [...prevData];
+      for (let i = 0; i < newData.length; i++) {
+        if (scope === 'active' && newData[i].id !== activeRowId) continue;
+        if (newData[i].pools.length === 0) continue;
+        newData[i] = distributeHostsOnly(newData[i], criteria, newData, previousTournaments);
+      }
+      return newData;
+    });
   };
 
   const handleGuideDragStart = (e) => {
@@ -3665,6 +3897,40 @@ export default function App() {
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
   };
+
+  // Resize-handler til guide-boblen (kanter + hjørne + bund)
+  const handleGuideResizeStart = (e, edge) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startW = guideSize.w;
+    const startDragX = guideDrag.x;
+    // Hent aktuel højde fra DOM hvis auto (h=0)
+    const guideEl = e.target.closest('.fixed');
+    const startH = guideSize.h || (guideEl ? guideEl.offsetHeight : 300);
+    const onMove = (ev) => {
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+      if (edge === 'right') {
+        setGuideSize(prev => ({ ...prev, w: Math.max(300, Math.min(1100, startW + dx)) }));
+      } else if (edge === 'left') {
+        const newW = Math.max(300, Math.min(1100, startW - dx));
+        setGuideSize(prev => ({ ...prev, w: newW }));
+        setGuideDrag(prev => ({ ...prev, x: startDragX + (startW - newW) }));
+      } else if (edge === 'bottom') {
+        setGuideSize(prev => ({ ...prev, h: Math.max(150, Math.min(700, startH + dy)) }));
+      } else if (edge === 'corner') {
+        setGuideSize({ w: Math.max(300, Math.min(1100, startW + dx)), h: Math.max(150, Math.min(700, startH + dy)) });
+      }
+    };
+    const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+
+  // Skala-faktor: 1.0 ved 520px (default), skalerer lineært
+  const guideScale = Math.max(0.7, Math.min(2.0, guideSize.w / 520));
 
   const handleDownloadPDF = async () => {
     setIsGeneratingPDF(true);
@@ -3708,8 +3974,8 @@ export default function App() {
       console.error("Fejl ved PDF generering:", err);
       setInfoModal({
         isOpen: true,
-        title: 'PDF Fejl',
-        message: `Kunne ikke generere PDF: ${err.message || 'Ukendt fejl'}. Prøv at reducere antallet af puljer eller genindlæs siden.`
+        title: 'Noget gik galt',
+        message: `Dokumentet kunne ikke oprettes: ${err.message || 'Ukendt årsag'}. Prøv at mindske antallet af puljer, eller genindlæs siden og prøv igen.`
       });
     } finally {
       if (container) {
@@ -3731,7 +3997,7 @@ export default function App() {
         id: `import_p${idx+1}_${Date.now()}_${row.id}`,
         name: `Pulje ${idx + 1}`,
         specificCriteria: { ...defaultSpecificCriteria },
-        hostMode: 'host', organizerClub: null, formatOverride: null
+        hostMode: 'host', organizerClub: null, formatOverride: null, isLocked: false
       }));
       const templates = is3v3 ? defaultTemplates3v3 : defaultTemplates;
       const hostKeys = is3v3 ? customHostKeys3v3 : customHostKeys;
@@ -3896,11 +4162,11 @@ export default function App() {
             setActiveRowId(finalRows[0].id);
             setActiveTab('rækker');
           } else {
-            setInfoModal({ isOpen: true, title: 'Tom fil', message: 'Kunne ikke finde nogle hold i filen. Tjek at formatet er korrekt (Række/Pulje oversigt).' });
+            setInfoModal({ isOpen: true, title: 'Ingen hold fundet', message: 'Der var ingen hold i filen. Tjek at du har valgt den rigtige fil (det skal være en RækkePuljeOversigt fra foda).' });
           }
         } catch (err) {
           console.error('Import parse error:', err);
-          setInfoModal({ isOpen: true, title: 'Fejl ved læsning', message: `Kunne ikke læse filen: ${err.message}` });
+          setInfoModal({ isOpen: true, title: 'Noget gik galt', message: `Filen kunne ikke læses: ${err.message}` });
         }
       };
       reader.readAsArrayBuffer(file);
@@ -3916,7 +4182,7 @@ export default function App() {
           setActiveRowId(finalRows[0].id);
           setActiveTab('rækker');
         } else {
-          setInfoModal({ isOpen: true, title: 'Tom fil', message: 'Kunne ikke finde nogle hold i filen. Tjek at formatet er korrekt.' });
+          setInfoModal({ isOpen: true, title: 'Ingen hold fundet', message: 'Der var ingen hold i filen. Tjek at du har valgt den rigtige fil.' });
         }
       };
       reader.readAsText(file, 'windows-1252');
@@ -4125,9 +4391,9 @@ export default function App() {
               {criteria.avoidSameClub && <Check className="w-4 h-4 text-white" />}
             </div>
             <div>
-              <div className="font-bold text-gray-800 flex items-center gap-2"><Shield className="w-5 h-5 text-blue-500" /> Ingen hold fra samme klub i samme pulje</div>
+              <div className="font-bold text-gray-800 flex items-center gap-2"><Shield className="w-5 h-5 text-blue-500" /> Hold fra samme klub skal i forskellige puljer</div>
               <div className="text-sm text-gray-500 mt-1">
-                Programmet vil altid prøve at splitte hold fra samme klub ud i forskellige puljer.
+                Hvis en klub har flere hold, sørger programmet for at de ikke havner i samme pulje — så de ikke spiller mod hinanden.
               </div>
             </div>
             <input type="checkbox" className="hidden" checked={criteria.avoidSameClub} onChange={(e) => setCriteria({...criteria, avoidSameClub: e.target.checked})} />
@@ -4138,9 +4404,9 @@ export default function App() {
               {criteria.autoAssignHost && <Check className="w-4 h-4 text-white" />}
             </div>
             <div>
-              <div className="font-bold text-gray-800 flex items-center gap-2"><UserCheck className="w-5 h-5 text-purple-500" /> Udvælg automatisk Værtsklub</div>
+              <div className="font-bold text-gray-800 flex items-center gap-2"><UserCheck className="w-5 h-5 text-purple-500" /> Vælg vært automatisk</div>
               <div className="text-sm text-gray-500 mt-1">
-                Når programmet har fordelt holdene i en pulje, vil den automatisk udvælge et hold og placere dem som vært.
+                Programmet vælger selv hvilken klub der skal være vært for hver pulje — så du ikke behøver at gøre det manuelt.
               </div>
             </div>
             <input type="checkbox" className="hidden" checked={criteria.autoAssignHost} onChange={(e) => setCriteria({...criteria, autoAssignHost: e.target.checked})} />
@@ -4151,9 +4417,9 @@ export default function App() {
               {criteria.hostGetsMostMatches && <Check className="w-4 h-4 text-white" />}
             </div>
             <div>
-              <div className="font-bold text-gray-800 flex items-center gap-2"><Key className="w-5 h-5 text-amber-500" /> Værtsklubben skal have nøglen med flere kampe</div>
+              <div className="font-bold text-gray-800 flex items-center gap-2"><Key className="w-5 h-5 text-amber-500" /> Værten får den plads med flest kampe</div>
               <div className="text-sm text-gray-500 mt-1">
-                Sikrer automatisk at værtsklubben får den Foda-nøgle i puljen, der udløser flest kampe.
+                Sørger for at den klub der er vært, automatisk får den plads i puljen som giver flest kampe — så der er mest aktivitet på værtens baner.
               </div>
             </div>
             <input type="checkbox" className="hidden" checked={criteria.hostGetsMostMatches} onChange={(e) => {
@@ -4171,9 +4437,9 @@ export default function App() {
               {criteria.checkBaneCapacity && <Check className="w-4 h-4 text-white" />}
             </div>
             <div>
-              <div className="font-bold text-gray-800 flex items-center gap-2"><Grid className="w-5 h-5 text-orange-500" /> Tjek banekapacitet hos værtsklubber</div>
+              <div className="font-bold text-gray-800 flex items-center gap-2"><Grid className="w-5 h-5 text-orange-500" /> Tjek om værten har nok baner</div>
               <div className="text-sm text-gray-500 mt-1">
-                Kontrollerer at det samlede antal baner, som kræves af alle puljer en klub er vært for på samme dato, ikke overstiger klubbens registrerede banekapacitet i Baner-oversigten.
+                Tjekker om den klub der er vært, har nok baner til alle de kampe der skal spilles hos dem på samme dag. Antal baner hentes fra oversigten under menupunktet "Baner".
               </div>
             </div>
             <input type="checkbox" className="hidden" checked={criteria.checkBaneCapacity} onChange={(e) => setCriteria({...criteria, checkBaneCapacity: e.target.checked})} />
@@ -4184,9 +4450,9 @@ export default function App() {
               {criteria.preferGeographicProximity && <Check className="w-4 h-4 text-white" />}
             </div>
             <div>
-              <div className="font-bold text-gray-800 flex items-center gap-2"><MapPin className="w-5 h-5 text-green-500" /> Geografisk nærhed i puljer</div>
+              <div className="font-bold text-gray-800 flex items-center gap-2"><MapPin className="w-5 h-5 text-green-500" /> Saml hold der ligger tæt på hinanden</div>
               <div className="text-sm text-gray-500 mt-1">
-                Når der er 2+ puljer i en række, prioriteres det at hold placeres tæt på hinanden geografisk — nær værtsklubben. Baseret på fynske klubbers lokationer.
+                Når der er flere puljer i en række, prøver programmet at samle de hold der ligger tæt på hinanden — så familierne ikke skal køre unødvendigt langt.
               </div>
             </div>
             <input type="checkbox" className="hidden" checked={criteria.preferGeographicProximity} onChange={(e) => setCriteria({...criteria, preferGeographicProximity: e.target.checked})} />
@@ -4198,19 +4464,19 @@ export default function App() {
       <div className="max-w-3xl w-full bg-white rounded-xl shadow-sm border border-gray-200 p-8 mt-6">
         <div className="flex items-center gap-3 mb-6">
           <ArrowUpDown className="w-8 h-8 text-blue-600" />
-          <h2 className="text-2xl font-bold text-gray-800">Prioriterede Værtsklub-kriterier</h2>
+          <h2 className="text-2xl font-bold text-gray-800">Rækkefølge for valg af vært</h2>
         </div>
         <p className="text-gray-600 mb-6 border-b border-gray-100 pb-6">
-          Disse 4 kriterier filtrerer hvem der kan vælges som værtsklub. De kan modstride hinanden — rækkefølgen bestemmer hvem der "vinder" ved konflikt. Nr. 1 har højest prioritet. Brug pilene til at ændre rækkefølge.
+          Disse 4 regler bestemmer hvem der kan vælges som vært. Nogle gange kan reglerne modstride hinanden — så bestemmer rækkefølgen hvilken regel der er vigtigst. Nr. 1 er den vigtigste. Brug pilene til at ændre rækkefølge.
         </p>
 
         <div className="space-y-3">
           {hostCriteriaPriority.map((key, idx) => {
             const meta = {
-              avoidMultipleHostsOnSameDate: { icon: Calendar, color: 'text-rose-500', bgActive: 'border-rose-400 bg-rose-50', title: 'En klub kun vært én gang pr. spilledato', desc: 'Undgår at gøre den samme klub til vært for flere puljer på samme dato.' },
-              avoidPreviousHosts: { icon: History, color: 'text-teal-500', bgActive: 'border-teal-400 bg-teal-50', title: 'Undgå tidligere værtsklubber', desc: 'Fravælger klubber der står på listen over tidligere stævner for samme række.' },
-              avoidInsufficientBaneCapacity: { icon: Shield, color: 'text-red-500', bgActive: 'border-red-400 bg-red-50', title: 'Undgå vært uden nok banekapacitet', desc: 'Fravælger klubber der har færre baner end skabelonen kræver.' },
-              prioritizeNewHostInAgeGroup: { icon: Star, color: 'text-yellow-500', bgActive: 'border-yellow-400 bg-yellow-50', title: 'Prioriter ny vært i årgangen', desc: 'Foretrækker klubber der ikke allerede er vært i en anden pulje i samme årgang.' }
+              avoidMultipleHostsOnSameDate: { icon: Calendar, color: 'text-rose-500', bgActive: 'border-rose-400 bg-rose-50', title: 'Én klub kun vært én gang pr. spilledag', desc: 'Sørger for at samme klub ikke skal være vært for flere puljer på samme dag.' },
+              avoidPreviousHosts: { icon: History, color: 'text-teal-500', bgActive: 'border-teal-400 bg-teal-50', title: 'Undgå klubber der var vært sidst', desc: 'Springer klubber over der allerede var vært ved det forrige stævne i samme række.' },
+              avoidInsufficientBaneCapacity: { icon: Shield, color: 'text-red-500', bgActive: 'border-red-400 bg-red-50', title: 'Undgå vært uden nok baner', desc: 'Springer klubber over der ikke har nok baner til de kampe der skal spilles.' },
+              prioritizeNewHostInAgeGroup: { icon: Star, color: 'text-yellow-500', bgActive: 'border-yellow-400 bg-yellow-50', title: 'Spred værtskaber i årgangen', desc: 'Vælger helst en klub der ikke allerede er vært for en anden pulje i samme årgang.' }
             }[key];
             if (!meta) return null;
             const Icon = meta.icon;
@@ -4220,13 +4486,13 @@ export default function App() {
             return (
               <div key={key} className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${isEnabled ? meta.bgActive : 'border-gray-200 bg-gray-50 opacity-60'}`}>
                 <div className="flex flex-col items-center gap-1 flex-shrink-0">
-                  <button onClick={() => { const n = [...hostCriteriaPriority]; if (idx > 0) { [n[idx], n[idx-1]] = [n[idx-1], n[idx]]; setHostCriteriaPriority(n); } }} disabled={idx === 0} className={`p-0.5 rounded ${idx === 0 ? 'text-gray-300' : 'text-gray-500 hover:text-blue-600 hover:bg-blue-100'}`}>
+                  <Tip text="Flyt op i prioritet"><button onClick={() => { const n = [...hostCriteriaPriority]; if (idx > 0) { [n[idx], n[idx-1]] = [n[idx-1], n[idx]]; setHostCriteriaPriority(n); } }} disabled={idx === 0} className={`p-0.5 rounded ${idx === 0 ? 'text-gray-300' : 'text-gray-500 hover:text-blue-600 hover:bg-blue-100'}`}>
                     <ChevronUp className="w-4 h-4" />
-                  </button>
+                  </button></Tip>
                   <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">{idx + 1}</div>
-                  <button onClick={() => { const n = [...hostCriteriaPriority]; if (idx < n.length - 1) { [n[idx], n[idx+1]] = [n[idx+1], n[idx]]; setHostCriteriaPriority(n); } }} disabled={idx === hostCriteriaPriority.length - 1} className={`p-0.5 rounded ${idx === hostCriteriaPriority.length - 1 ? 'text-gray-300' : 'text-gray-500 hover:text-blue-600 hover:bg-blue-100'}`}>
+                  <Tip text="Flyt ned i prioritet"><button onClick={() => { const n = [...hostCriteriaPriority]; if (idx < n.length - 1) { [n[idx], n[idx+1]] = [n[idx+1], n[idx]]; setHostCriteriaPriority(n); } }} disabled={idx === hostCriteriaPriority.length - 1} className={`p-0.5 rounded ${idx === hostCriteriaPriority.length - 1 ? 'text-gray-300' : 'text-gray-500 hover:text-blue-600 hover:bg-blue-100'}`}>
                     <ChevronDown className="w-4 h-4" />
-                  </button>
+                  </button></Tip>
                 </div>
 
                 <label className="flex items-center gap-3 flex-1 cursor-pointer min-w-0">
@@ -4274,14 +4540,15 @@ export default function App() {
           <div className="flex items-center gap-3">
             <Wand2 className="w-8 h-8 text-pink-600" />
             <div>
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-800">Klubbernes Ønsker & Regler</h2>
-              <p className="text-gray-500 mt-1 text-sm">Automatiske regler udvundet fra ønsker. "Aktive" regler overtrumfer generelle kriterier.</p>
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-800">Klubbernes Ønsker</h2>
+              <p className="text-gray-500 mt-1 text-sm">Her kan du se og rette klubbernes ønsker. Ønsker der er markeret som "aktive" har forrang over de generelle regler.</p>
             </div>
           </div>
 
+          <Tip text="Indlæs en fil med klubbernes ønsker (CSV eller Excel)" position="bottom">
           <label className="flex items-center gap-2 bg-pink-600 hover:bg-pink-700 text-white px-4 py-2.5 rounded-lg cursor-pointer transition-colors shadow-sm font-bold text-sm">
             <Upload size={18} />
-            <span>Upload ønskefil (CSV/Excel)</span>
+            <span>Indlæs ønskefil</span>
             <input
               type="file"
               accept=".csv, .txt, .xlsx, .xls"
@@ -4290,6 +4557,7 @@ export default function App() {
               onChange={handleWishesUpload}
             />
           </label>
+          </Tip>
         </div>
 
         {/* Stats / Dashboard */}
@@ -4299,7 +4567,7 @@ export default function App() {
               <List size={24} />
             </div>
             <div>
-              <p className="text-[10px] sm:text-xs text-gray-500 font-bold uppercase">Totale Ønsker</p>
+              <p className="text-[10px] sm:text-xs text-gray-500 font-bold uppercase">Alle ønsker</p>
               <p className="text-2xl font-bold text-gray-800">{wishes.length}</p>
             </div>
           </div>
@@ -4308,46 +4576,48 @@ export default function App() {
               <Users size={24} />
             </div>
             <div>
-              <p className="text-[10px] sm:text-xs text-gray-500 font-bold uppercase">Unikke Klubber</p>
+              <p className="text-[10px] sm:text-xs text-gray-500 font-bold uppercase">Antal klubber</p>
               <p className="text-2xl font-bold text-gray-800">
                 {new Set(wishes.map(d => d.club)).size}
               </p>
             </div>
           </div>
-          <button 
+          <Tip text={wishesFilterRegel === 'UNKNOWN' ? "Klik for at vise alle ønsker igen" : "Vis kun ønsker der ikke kunne genkendes — dem skal du selv tjekke"} position="bottom">
+          <button
             onClick={() => setWishesFilterRegel(wishesFilterRegel === 'UNKNOWN' ? 'ALL_FILTER' : 'UNKNOWN')}
             className={`p-5 rounded-xl shadow-sm border flex items-center gap-4 cursor-pointer transition-colors text-left ${wishesFilterRegel === 'UNKNOWN' ? 'bg-amber-50 border-amber-400 scale-[1.02]' : 'bg-white border-gray-200 hover:border-amber-300 hover:bg-amber-50/50'}`}
-            title={wishesFilterRegel === 'UNKNOWN' ? "Vis alle regler" : "Klik for at filtrere og kun se ukendte regler"}
           >
             <div className={`p-3 rounded-lg transition-colors ${wishesFilterRegel === 'UNKNOWN' ? 'bg-amber-200 text-amber-800' : 'bg-amber-100 text-amber-600'}`}>
               <AlertCircle size={24} />
             </div>
             <div>
-              <p className={`text-[10px] sm:text-xs font-bold uppercase transition-colors ${wishesFilterRegel === 'UNKNOWN' ? 'text-amber-700' : 'text-amber-600'}`}>Kræver Tjek (Ukendt)</p>
+              <p className={`text-[10px] sm:text-xs font-bold uppercase transition-colors ${wishesFilterRegel === 'UNKNOWN' ? 'text-amber-700' : 'text-amber-600'}`}>Skal tjekkes manuelt</p>
               <p className="text-2xl font-bold text-gray-800">{wishes.filter(w => w.ruleType === 'UNKNOWN').length}</p>
             </div>
           </button>
-          
-          <button 
+          </Tip>
+
+          <Tip text={showDuplicatesOnly ? "Klik for at vise alle ønsker igen" : "Vis kun ønsker der optræder mere end én gang"} position="bottom">
+          <button
             onClick={() => setShowDuplicatesOnly(!showDuplicatesOnly)}
             className={`p-5 rounded-xl shadow-sm border flex items-center gap-4 cursor-pointer transition-colors text-left ${showDuplicatesOnly ? 'bg-purple-50 border-purple-400 scale-[1.02]' : 'bg-white border-gray-200 hover:border-purple-300 hover:bg-purple-50/50'}`}
-            title={showDuplicatesOnly ? "Vis alle ønsker" : "Klik for at filtrere og kun se dubletter"}
           >
             <div className={`p-3 rounded-lg transition-colors ${showDuplicatesOnly ? 'bg-purple-200 text-purple-800' : 'bg-purple-100 text-purple-600'}`}>
               <Copy size={24} />
             </div>
             <div>
-              <p className={`text-[10px] sm:text-xs font-bold uppercase transition-colors ${showDuplicatesOnly ? 'text-purple-700' : 'text-purple-600'}`}>Ens Ønsker (Dubletter)</p>
+              <p className={`text-[10px] sm:text-xs font-bold uppercase transition-colors ${showDuplicatesOnly ? 'text-purple-700' : 'text-purple-600'}`}>Gentagne ønsker</p>
               <p className="text-2xl font-bold text-gray-800">{duplicateWishesIds.size}</p>
             </div>
           </button>
+          </Tip>
 
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
             <div className="bg-pink-100 p-3 rounded-lg text-pink-600">
               <Check size={24} />
             </div>
             <div>
-              <p className="text-[10px] sm:text-xs text-gray-500 font-bold uppercase">Filtreret Visning</p>
+              <p className="text-[10px] sm:text-xs text-gray-500 font-bold uppercase">Vises nu</p>
               <p className="text-2xl font-bold text-gray-800">{filteredWishes.length}</p>
             </div>
           </div>
@@ -4936,18 +5206,22 @@ export default function App() {
           <div className="px-4 py-4 mb-2 text-sm font-bold text-gray-700 uppercase tracking-wider border-b flex items-center justify-between">
             <span>Skabeloner</span>
             <div className="flex rounded-lg overflow-hidden border border-gray-300">
+              <Tip text="Vis kampmønstre til 3-mod-3 format" position="bottom">
               <button
                 onClick={() => setNøglerFormat('3:3')}
                 className={`px-3 py-1 text-xs font-bold transition-colors ${nøglerFormat === '3:3' ? 'bg-green-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
               >
                 3:3
               </button>
+              </Tip>
+              <Tip text="Vis kampmønstre til 5-mod-5 format" position="bottom">
               <button
                 onClick={() => setNøglerFormat('5:5')}
                 className={`px-3 py-1 text-xs font-bold transition-colors border-l border-gray-300 ${nøglerFormat === '5:5' ? 'bg-green-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
               >
                 5:5
               </button>
+              </Tip>
             </div>
           </div>
           <ul className="space-y-1 px-2 overflow-y-auto pb-6">
@@ -4992,15 +5266,15 @@ export default function App() {
               </div>
               <p className="text-gray-600 mb-6 border-b border-gray-100 pb-6">
                 {isAllMeetAll(activeMatrix)
-                  ? <>Skabelonen <strong>{activeSelected}</strong> er en skabelon hvor alle hold møder hinanden. Der er derfor ingen nøglekonflikter mulige.</>
-                  : <>Nedenfor ser du matrixen for skabelonen <strong>{activeSelected}</strong>. De røde krydser markerer de hold, som <strong>IKKE</strong> mødes. Brug dette til at placere dine hold på de rigtige nøgler.</>
+                  ? <>I kampmønsteret <strong>{activeSelected}</strong> møder alle hold hinanden. Der kan derfor ikke opstå problemer med pladserne.</>
+                  : <>Herunder kan du se hvem der møder hvem i kampmønsteret <strong>{activeSelected}</strong>. De røde krydser viser de hold som <strong>IKKE</strong> spiller mod hinanden. Brug dette til at placere dine hold på de rigtige pladser.</>
                 }
               </p>
 
               <div className="bg-blue-50 p-6 rounded-xl border border-blue-200 mb-8 flex flex-col sm:flex-row justify-between items-center gap-4">
                  <div>
-                    <h3 className="font-bold text-blue-900 mb-1 flex items-center gap-2"><MapPin className="w-4 h-4" /> Standard Værtsklub Nøgle</h3>
-                    <p className="text-sm text-blue-700">Vælg hvilken nøgle der som standard skal tildeles værtsklubben, når denne skabelon benyttes.</p>
+                    <h3 className="font-bold text-blue-900 mb-1 flex items-center gap-2"><MapPin className="w-4 h-4" /> Værtens plads i puljen</h3>
+                    <p className="text-sm text-blue-700">Vælg hvilken plads værten automatisk skal have, når dette kampmønster bruges.</p>
                  </div>
                  <select
                     value={activeCustomHostKeys[activeSelected] || activeGetBestHostKey(activeSelected, {})}
@@ -5022,7 +5296,7 @@ export default function App() {
                 <div className="bg-green-50 p-8 rounded-xl border border-green-200 mb-8 text-center">
                   <Check className="w-12 h-12 text-green-500 mx-auto mb-3" />
                   <h3 className="font-bold text-green-800 text-lg mb-2">Alle hold møder alle andre hold</h3>
-                  <p className="text-green-700 text-sm">I denne skabelon møder hvert hold alle andre hold. Der er ingen nøglekonflikter mulige, og matrixen er derfor ikke nødvendig at vise.</p>
+                  <p className="text-green-700 text-sm">I dette kampmønster møder hvert hold alle andre hold. Der kan ikke opstå problemer med pladserne.</p>
                 </div>
               ) : (
                 <>
@@ -5113,7 +5387,7 @@ export default function App() {
                 return (
                   <div className="bg-amber-50 p-6 rounded-xl border border-amber-200 mt-6">
                     <h3 className="font-bold text-amber-800 mb-2">Oversigt: Hvem møder hinanden 2+ gange?</h3>
-                    <p className="text-amber-700 text-sm mb-4">Disse nøgler møder hinanden mere end én gang i skabelonen. Vær opmærksom på dette ved nøgletildeling.</p>
+                    <p className="text-amber-700 text-sm mb-4">Disse pladser spiller mod hinanden mere end én gang i kampmønsteret. Vær opmærksom på dette når du placerer hold.</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {Array.from({ length: activeMatrix.length }).map((_, i) => {
                         const partners = meetMultiple[i + 1] || [];
@@ -5313,7 +5587,7 @@ export default function App() {
             <HelpCircle className="w-8 h-8 text-green-600" />
             <h2 className="text-2xl md:text-3xl font-bold text-gray-800">Hjælp & Vejledning</h2>
           </div>
-          <p className="text-gray-500 text-sm">Overblik over StævnePlan — hvad de enkelte funktioner gør, og hvordan stævner planlægges.</p>
+          <p className="text-gray-500 text-sm">Her finder du en guide til hele programmet — trin for trin, så du nemt kan planlægge dit stævne.</p>
         </div>
 
         {/* Workflow */}
@@ -5321,12 +5595,12 @@ export default function App() {
           <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4"><Zap className="w-5 h-5 text-amber-500" /> Sådan bruger du StævnePlan</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {[
-              { nr: '1', titel: 'Importer rækker', tekst: 'Upload turneringsdata (RækkePuljeOversigt .xls) fra foda. Holdene fordeles automatisk i rækker.' },
-              { nr: '2', titel: 'Upload ønsker', tekst: 'Upload klubbernes ønskefil (Excel/CSV). Ønsker klassificeres automatisk som regler.' },
-              { nr: '3', titel: 'Sæt kriterier', tekst: 'Vælg hvilke regler der skal styre fordelingen (undgå samme klub, banekapacitet, osv.).' },
-              { nr: '4', titel: 'Fordel hold', tekst: 'Klik "Fordel ALLE" for at fordele alle hold i puljer. Algoritmen fordeler hold efter ønsker, kriterier, værtsklubsfordeling og geografiske hensyn.' },
-              { nr: '5', titel: 'Validér', tekst: 'Klik "Validér" for at tjekke banekapacitet, konflikter og uopfyldte ønsker.' },
-              { nr: '6', titel: 'Download PDF', tekst: 'Eksporter den færdige stævneplan som PDF med 8 puljer per side.' },
+              { nr: '1', titel: 'Hent rækker ind', tekst: 'Hent den fil du har fået fra foda (den hedder typisk "RækkePuljeOversigt") ind i programmet. Alle hold og rækker kommer automatisk med.' },
+              { nr: '2', titel: 'Indlæs ønsker', tekst: 'Indlæs filen med klubbernes ønsker. Programmet finder selv ud af hvad hvert ønske betyder — f.eks. om en klub gerne vil være vært.' },
+              { nr: '3', titel: 'Vælg regler', tekst: 'Bestem hvilke regler programmet skal følge — f.eks. at hold fra samme klub ikke må være i samme pulje, eller at der skal tages hensyn til køreafstand.' },
+              { nr: '4', titel: 'Fordel hold', tekst: 'Klik "Fordel ALLE" for at lade programmet fordele alle hold i puljer. Det tager hensyn til dine regler, klubbernes ønsker, og hvem der er vært.' },
+              { nr: '5', titel: 'Tjek fordelingen', tekst: 'Klik "Tjek" for at sikre at alt ser rigtigt ud — at værterne har nok baner, og at klubbernes ønsker er opfyldt.' },
+              { nr: '6', titel: 'Hent som dokument', tekst: 'Hent den færdige stævneplan som et dokument du kan printe — med 8 puljer pr. side.' },
             ].map(s => (
               <div key={s.nr} className="flex gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
                 <span className="flex-shrink-0 w-7 h-7 rounded-full bg-green-600 text-white flex items-center justify-center text-sm font-bold">{s.nr}</span>
@@ -5341,15 +5615,15 @@ export default function App() {
 
         {/* Tabs forklaring */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4"><LayoutGrid className="w-5 h-5 text-blue-500" /> Faner (tabs)</h3>
+          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4"><LayoutGrid className="w-5 h-5 text-blue-500" /> Programmets menupunkter</h3>
           <div className="space-y-3">
             {[
-              { ikon: <LayoutGrid className="w-4 h-4 text-green-600" />, navn: 'Rækker', tekst: 'Hovedvisningen. Importer turneringsrækker, se hold, opret puljer, fordel hold og træk dem mellem puljer. Herfra kan du også fordele alle rækker og validere hele stævneplanen.' },
-              { ikon: <Key className="w-4 h-4 text-amber-600" />, navn: 'Nøgler', tekst: 'Kampskabeloner (nøgler) for hver puljestørrelse. Definerer rækkefølgen af kampe — f.eks. for en 4-holds pulje: kamp 1 vs 2, kamp 3 vs 4, osv. Du kan redigere og oprette egne nøgler.' },
-              { ikon: <Settings className="w-4 h-4 text-gray-600" />, navn: 'Kriterier', tekst: 'Regler der styrer den automatiske fordeling. Bestemmer om algoritmen skal undgå hold fra samme klub, tjekke banekapacitet, prioritere geografisk nærhed osv.' },
-              { ikon: <Sparkles className="w-4 h-4 text-pink-600" />, navn: 'Ønsker', tekst: 'Klubbernes individuelle ønsker uploadet fra Excel/CSV. Hvert ønske klassificeres automatisk som en regeltype (vært, undgå vært, OBS osv.) og kan redigeres manuelt.' },
-              { ikon: <MapIcon className="w-4 h-4 text-indigo-600" />, navn: 'Baner', tekst: 'Oversigt over hver klubs banekapacitet — antal 3:3, 5:5 og 8:8 baner. Bruges til at validere at værtsklubber har nok baner til deres puljer.' },
-              { ikon: <MapPin className="w-4 h-4 text-red-600" />, navn: 'Værtsklubber', tekst: 'Overblik over hvilke klubber der er tildelt som vært, for hvilke rækker, og på hvilke datoer. Viser også historik fra tidligere stævner.' },
+              { ikon: <LayoutGrid className="w-4 h-4 text-green-600" />, navn: 'Rækker', tekst: 'Dit hovedoverblik. Her henter du dine turneringsrækker ind, ser alle hold, opretter puljer, fordeler hold og kan trække hold fra én pulje til en anden med musen. Herfra kan du også fordele alle rækker og tjekke hele stævneplanen.' },
+              { ikon: <Key className="w-4 h-4 text-amber-600" />, navn: 'Nøgler', tekst: 'Nøgler bestemmer kamprækkefølgen i en pulje — altså hvem der spiller mod hvem, og i hvilken rækkefølge. F.eks. i en pulje med 4 hold: først spiller hold 1 mod 2, så hold 3 mod 4, osv. Du kan redigere eller lave dine egne.' },
+              { ikon: <Settings className="w-4 h-4 text-gray-600" />, navn: 'Kriterier', tekst: 'Her vælger du de regler programmet skal følge, når det fordeler holdene. F.eks. at hold fra samme klub ikke må være i samme pulje, at værten skal have nok baner, eller at hold der ligger tæt på hinanden skal samles.' },
+              { ikon: <Sparkles className="w-4 h-4 text-pink-600" />, navn: 'Ønsker', tekst: 'Her kan du se og rette klubbernes individuelle ønsker. Når du indlæser ønskefilen, finder programmet selv ud af hvad hvert ønske betyder (f.eks. "vil gerne være vært" eller "vil undgå bestemt modstander"). Du kan altid rette det manuelt.' },
+              { ikon: <MapIcon className="w-4 h-4 text-indigo-600" />, navn: 'Baner', tekst: 'Her kan du se hvor mange baner hver klub har — fordelt på 3-mands, 5-mands og 8-mands baner. Det bruges til at sikre at en vært har nok baner til de kampe der skal spilles.' },
+              { ikon: <MapPin className="w-4 h-4 text-red-600" />, navn: 'Værtsklubber', tekst: 'Her kan du se hvilke klubber der er valgt som vært, for hvilke rækker, og på hvilke datoer. Du kan også se hvem der var vært ved tidligere stævner.' },
             ].map(t => (
               <div key={t.navn} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
                 <span className="mt-0.5 flex-shrink-0">{t.ikon}</span>
@@ -5364,17 +5638,17 @@ export default function App() {
 
         {/* Regeltyper */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4"><Wand2 className="w-5 h-5 text-pink-500" /> Regeltyper (Ønsker)</h3>
-          <p className="text-xs text-gray-500 mb-3">Når klubber uploader ønsker, klassificeres de automatisk som en af følgende regeltyper. Regeltypen bestemmer hvad algoritmen gør med ønsket.</p>
+          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4"><Wand2 className="w-5 h-5 text-pink-500" /> Typer af ønsker</h3>
+          <p className="text-xs text-gray-500 mb-3">Når du indlæser klubbernes ønsker, finder programmet selv ud af hvilken type hvert ønske er. Det bestemmer hvad programmet gør med ønsket, når holdene fordeles.</p>
           <div className="space-y-2">
             {[
-              { id: 'FORCE_HOST', farve: 'bg-green-100 border-green-300 text-green-800', tekst: 'Klubben SKAL være vært for denne række/årgang. Algoritmen tildeler klubben som vært.' },
-              { id: 'AVOID_HOST', farve: 'bg-red-100 border-red-300 text-red-800', tekst: 'Klubben må IKKE tildeles som vært. Algoritmen springer klubben over ved værtstildeling.' },
-              { id: 'SAME_POOL', farve: 'bg-blue-100 border-blue-300 text-blue-800', tekst: 'To eller flere hold skal placeres i samme pulje. Bruges når klubber ønsker at spille mod hinanden.' },
-              { id: 'SAME_LOCATION', farve: 'bg-blue-100 border-blue-300 text-blue-800', tekst: 'Hold skal spille på samme lokation/bane. Relateret til værtskab.' },
-              { id: 'AVOID_CLUB', farve: 'bg-blue-100 border-blue-300 text-blue-800', tekst: 'Klubben ønsker ikke at møde en bestemt modstander i puljen.' },
-              { id: 'OBS', farve: 'bg-purple-100 border-purple-300 text-purple-800', tekst: 'Information til planlæggeren. Ingen automatisk handling — vises som note ved ønsket.' },
-              { id: 'UNKNOWN', farve: 'bg-amber-100 border-amber-300 text-amber-800', tekst: 'Ønsket kunne ikke klassificeres automatisk. Kræver manuel gennemgang — klik redigér for at tildele regeltype.' },
+              { id: 'FORCE_HOST', farve: 'bg-green-100 border-green-300 text-green-800', tekst: 'Klubben SKAL være vært for denne række. Programmet sørger for at klubben bliver tildelt som vært.' },
+              { id: 'AVOID_HOST', farve: 'bg-red-100 border-red-300 text-red-800', tekst: 'Klubben må IKKE være vært. Programmet springer klubben over, når det vælger værter.' },
+              { id: 'SAME_POOL', farve: 'bg-blue-100 border-blue-300 text-blue-800', tekst: 'To eller flere hold skal være i samme pulje. Bruges når klubber gerne vil spille mod hinanden.' },
+              { id: 'SAME_LOCATION', farve: 'bg-blue-100 border-blue-300 text-blue-800', tekst: 'Hold skal spille på det samme sted. Hænger sammen med hvem der er vært.' },
+              { id: 'AVOID_CLUB', farve: 'bg-blue-100 border-blue-300 text-blue-800', tekst: 'Klubben ønsker IKKE at spille mod en bestemt modstander i puljen.' },
+              { id: 'OBS', farve: 'bg-purple-100 border-purple-300 text-purple-800', tekst: 'En bemærkning til dig som planlægger. Programmet gør ikke noget automatisk — det vises bare som en note.' },
+              { id: 'UNKNOWN', farve: 'bg-amber-100 border-amber-300 text-amber-800', tekst: 'Programmet kunne ikke finde ud af hvad dette ønske betyder. Du skal selv kigge på det — klik "Redigér" for at vælge den rigtige type.' },
             ].map(r => (
               <div key={r.id} className="flex items-start gap-3 p-2.5 rounded-lg border border-gray-100">
                 <span className={`flex-shrink-0 px-2 py-0.5 rounded text-[10px] font-bold border ${r.farve}`}>
@@ -5388,19 +5662,19 @@ export default function App() {
 
         {/* Kriterier forklaring */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4"><Target className="w-5 h-5 text-indigo-500" /> Fordelingskriterier</h3>
-          <p className="text-xs text-gray-500 mb-3">Kriterierne styrer hvordan algoritmen fordeler hold i puljer og tildeler værtsklubber. Slå dem til/fra under Kriterier-fanen.</p>
+          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4"><Target className="w-5 h-5 text-indigo-500" /> Regler for fordelingen</h3>
+          <p className="text-xs text-gray-500 mb-3">Disse regler bestemmer hvordan programmet fordeler holdene i puljer og vælger hvem der skal være vært. Du kan slå dem til og fra under menupunktet "Kriterier".</p>
           <div className="space-y-2">
             {[
-              { navn: 'Undgå hold fra samme klub i pulje', tekst: 'Fordeler hold så to hold fra samme klub ikke havner i samme pulje. F.eks. vil "OB 1" og "OB 2" blive fordelt i forskellige puljer.' },
-              { navn: 'Auto-tildel værtsklub', tekst: 'Vælger automatisk en værtsklub for hver pulje baseret på banekapacitet, historik og ønsker.' },
-              { navn: 'Vært får flest kampe', tekst: 'Placerer værtsklubben på den position i puljen der giver flest kampe (typisk plads 1).' },
-              { navn: 'Undgå flere værtskaber samme dag', tekst: 'Sørger for at én klub ikke tildeles som vært for flere puljer på samme spilledag.' },
-              { navn: 'Undgå gentagelser fra tidligere stævner', tekst: 'Klubber der var vært sidst bliver nedprioriteret, så værtskabet fordeles mere retfærdigt.' },
-              { navn: 'Tjek banekapacitet', tekst: 'Validerer at værtsklubben har nok baner af den rigtige størrelse (3:3, 5:5 eller 8:8) til puljen.' },
-              { navn: 'Undgå utilstrækkelig banekapacitet', tekst: 'Forhindrer tildeling af værtsklub hvis klubben ikke har nok baner. Adskiller sig fra "Tjek" ved at blokere i stedet for kun at advare.' },
-              { navn: 'Prioriter nyt værtskab i aldersgruppe', tekst: 'Fordeler værtskaber bredt mellem klubber indenfor samme aldersgruppe, så alle klubber prøver at være vært.' },
-              { navn: 'Geografisk nærhed', tekst: 'Prøver at samle hold der ligger geografisk tæt på hinanden i samme pulje, så transporttiden minimeres.' },
+              { navn: 'Undgå hold fra samme klub i pulje', tekst: 'Sørger for at to hold fra samme klub ikke havner i samme pulje. F.eks. vil "OB 1" og "OB 2" altid komme i forskellige puljer.' },
+              { navn: 'Vælg vært automatisk', tekst: 'Programmet vælger selv en vært for hver pulje ud fra hvem der har flest baner, hvem der var vært sidst, og hvad klubberne ønsker.' },
+              { navn: 'Værten får flest kampe', tekst: 'Den klub der er vært, får den plads i puljen som giver flest kampe (typisk plads 1).' },
+              { navn: 'Undgå flere værtskaber samme dag', tekst: 'Sørger for at samme klub ikke skal være vært for flere puljer på samme spilledag.' },
+              { navn: 'Undgå gentagelser fra tidligere stævner', tekst: 'Klubber der var vært sidste gang, bliver sat længere ned på listen — så andre klubber også får tur.' },
+              { navn: 'Tjek antal baner hos vært', tekst: 'Tjekker om værten har nok baner af den rigtige størrelse (3-mands, 5-mands eller 8-mands) til kampene i puljen.' },
+              { navn: 'Undgå vært uden nok baner', tekst: 'Forhindrer at en klub bliver valgt som vært, hvis den ikke har nok baner. Forskellen fra "Tjek" er at denne regel helt blokerer det, i stedet for bare at vise en advarsel.' },
+              { navn: 'Spred værtskaber i årgangen', tekst: 'Sørger for at værtskabet fordeles bredt mellem klubberne i samme årgang, så det ikke altid er de samme der er vært.' },
+              { navn: 'Hold tæt på hinanden i samme pulje', tekst: 'Prøver at samle hold der ligger tæt på hinanden geografisk, så familierne ikke skal køre så langt.' },
             ].map(k => (
               <div key={k.navn} className="p-2.5 bg-gray-50 rounded-lg border border-gray-100">
                 <div className="font-bold text-xs text-gray-800">{k.navn}</div>
@@ -5412,16 +5686,16 @@ export default function App() {
 
         {/* Fordelingsalgoritme */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4"><Shuffle className="w-5 h-5 text-green-500" /> Fordelingsalgoritmen</h3>
-          <p className="text-xs text-gray-500 mb-3">Når du klikker "Fordel række" eller "Fordel ALLE", sker følgende:</p>
+          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4"><Shuffle className="w-5 h-5 text-green-500" /> Sådan fordeler programmet holdene</h3>
+          <p className="text-xs text-gray-500 mb-3">Når du klikker "Fordel række" eller "Fordel ALLE", gør programmet følgende i denne rækkefølge:</p>
           <div className="space-y-2">
             {[
-              { nr: '1', tekst: 'Værtsklubber vælges FØRST for alle puljer — FORCE_HOST-ønsker har prioritet, derefter filtreres efter banekapacitet, historik og ønsker.' },
-              { nr: '2', tekst: 'Hold fordeles i puljer efter geografisk nærhed til puljens værtsklub. Mindste pulje prioriteres ved lige afstand.' },
-              { nr: '3', tekst: 'SAME_POOL- og AVOID_CLUB-regler respekteres — hold placeres kun i valide puljer.' },
-              { nr: '4', tekst: 'Undgå-samme-klub sikrer at to hold fra samme klub ikke havner i samme pulje.' },
-              { nr: '5', tekst: 'Geografisk optimering polerer fordelingen ved at bytte hold der er tættere på en anden pulje.' },
-              { nr: '6', tekst: 'Puljer med for få hold fyldes op med oversiddere. Værten placeres på positionen med flest kampe.' },
+              { nr: '1', tekst: 'Først vælges en vært for hver pulje. Klubber der har ønsket at være vært, får forrang. Derefter kigges der på antal baner, hvem der var vært sidst, og øvrige ønsker.' },
+              { nr: '2', tekst: 'Holdene fordeles i puljerne, så hold der ligger tæt på værtens baner samles. Hvis to puljer er lige langt væk, vælges den pulje der har færrest hold.' },
+              { nr: '3', tekst: 'Ønsker om at bestemte hold skal være i samme pulje, eller at bestemte modstandere skal undgås, bliver respekteret.' },
+              { nr: '4', tekst: 'Hold fra samme klub fordeles i forskellige puljer, så de ikke møder hinanden.' },
+              { nr: '5', tekst: 'Til sidst finjusteres fordelingen ved at bytte hold rundt, hvis et hold ligger tættere på en anden puljes vært.' },
+              { nr: '6', tekst: 'Puljer med for få hold til en fuld kamprunde fyldes op med "oversiddere" (pladsholdere). Værten placeres på den plads der giver flest kampe.' },
             ].map(s => (
               <div key={s.nr} className="flex gap-3 items-start p-2 pl-3">
                 <span className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-[10px] font-bold mt-0.5">{s.nr}</span>
@@ -5433,22 +5707,22 @@ export default function App() {
 
         {/* Import-formater */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4"><FileText className="w-5 h-5 text-orange-500" /> Importformater</h3>
+          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4"><FileText className="w-5 h-5 text-orange-500" /> Hvilke filer kan bruges?</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
-              <div className="font-bold text-sm text-gray-800 mb-1">Turneringsdata (Rækker)</div>
+              <div className="font-bold text-sm text-gray-800 mb-1">Turneringsfilen (Rækker)</div>
               <div className="text-xs text-gray-500 space-y-1">
-                <p>HTML-xls fil fra foda (RækkePuljeOversigt).</p>
-                <p>Indeholder rækker, holdnavne og spilledatoer.</p>
-                <p>Upload via "Importer rækker" i Rækker-fanen.</p>
+                <p>Den fil du henter fra foda — den hedder typisk "RækkePuljeOversigt".</p>
+                <p>Filen indeholder alle rækker, holdnavne og spilledatoer.</p>
+                <p>Du indlæser den via "Hent rækker ind" under menupunktet Rækker.</p>
               </div>
             </div>
             <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
-              <div className="font-bold text-sm text-gray-800 mb-1">Ønsker</div>
+              <div className="font-bold text-sm text-gray-800 mb-1">Ønskefilen</div>
               <div className="text-xs text-gray-500 space-y-1">
-                <p>Excel (.xlsx) eller CSV med 4 kolonner:</p>
+                <p>En Excel-fil med 4 kolonner:</p>
                 <p className="font-medium text-gray-700">Klub | Årgang | Ønske | Kontaktperson</p>
-                <p>Upload via "Upload ønskefil" i Ønsker-fanen.</p>
+                <p>Du indlæser den via "Indlæs ønskefil" under menupunktet Ønsker.</p>
               </div>
             </div>
           </div>
@@ -5459,12 +5733,12 @@ export default function App() {
           <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4"><Wrench className="w-5 h-5 text-gray-500" /> Vigtige knapper</h3>
           <div className="space-y-2">
             {[
-              { navn: 'Fordel række', tekst: 'Fordeler holdene i den valgte række i puljer baseret på algoritmen og kriterierne.' },
-              { navn: 'Fordel ALLE', tekst: 'Fordeler alle rækker på én gang. Eksisterende fordelinger nulstilles.' },
-              { navn: 'Auto-tilpas', tekst: 'Justerer automatisk antal puljer og puljestørrelse for den valgte række baseret på holdantal.' },
-              { navn: 'Validér', tekst: 'Kører en fuld validering: tjekker banekapacitet, uopfyldte ønsker, konflikter og dobbelt-værtskaber.' },
-              { navn: 'Gem / Åbn', tekst: 'Gem hele stævneplanen som JSON-fil, eller åbn en tidligere gemt plan.' },
-              { navn: 'PDF', tekst: 'Eksporter den færdige stævneplan som PDF — 8 puljer per side med sidetal.' },
+              { navn: 'Fordel række', tekst: 'Fordeler holdene i den valgte række ud i puljer efter dine regler og ønsker.' },
+              { navn: 'Fordel ALLE', tekst: 'Fordeler alle rækker på én gang. Eventuelle tidligere fordelinger slettes først.' },
+              { navn: 'Auto-tilpas', tekst: 'Lader programmet selv vælge det bedste antal puljer og puljestørrelse ud fra hvor mange hold der er.' },
+              { navn: 'Tjek', tekst: 'Gennemgår hele stævneplanen og tjekker om værterne har nok baner, om klubbernes ønsker er opfyldt, og om der er problemer.' },
+              { navn: 'Gem / Åbn', tekst: 'Gem dit arbejde i en fil, så du kan åbne det igen senere. Du kan også åbne en plan du har gemt før.' },
+              { navn: 'Hent dokument', tekst: 'Hent den færdige stævneplan som et dokument du kan printe — med 8 puljer pr. side og sidetal.' },
             ].map(k => (
               <div key={k.navn} className="flex items-start gap-3 p-2.5 bg-gray-50 rounded-lg border border-gray-100">
                 <span className="flex-shrink-0 px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-800 border border-green-200">{k.navn}</span>
@@ -5482,61 +5756,79 @@ export default function App() {
     <>
       <div className="print:hidden flex flex-col h-screen bg-gray-50 font-sans text-gray-800 overflow-hidden">
         
-        <div className="bg-green-700 text-white h-10 flex items-center justify-between px-4 shadow-md z-20 shrink-0 gap-4">
+        <div className="bg-green-700 text-white h-10 flex items-center justify-between px-4 shadow-md z-20 shrink-0 gap-4 overflow-visible">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 font-bold text-base">
               <span className="text-lg">⚽</span>
               StævnePlan
             </div>
             <div className="flex gap-2">
+              <Tip text="Se og fordel hold i turneringsrækker og puljer" position="bottom">
               <button onClick={() => setActiveTab('rækker')} className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-medium transition-colors text-sm ${activeTab === 'rækker' ? 'bg-green-800 text-white shadow-inner' : 'text-green-50 hover:bg-green-600'}`}>
                 <LayoutGrid className="w-4 h-4" /> Rækker
               </button>
+              </Tip>
+              <Tip text="Vælg kampmønstre — hvem møder hvem i puljerne" position="bottom">
               <button onClick={() => setActiveTab('nøgler')} className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-medium transition-colors text-sm ${activeTab === 'nøgler' ? 'bg-green-800 text-white shadow-inner' : 'text-green-50 hover:bg-green-600'}`}>
                 <Key className="w-4 h-4" /> Nøgler
               </button>
+              </Tip>
+              <Tip text="Indstil regler for hvordan holdene skal fordeles" position="bottom">
               <button onClick={() => setActiveTab('kriterier')} className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-medium transition-colors text-sm ${activeTab === 'kriterier' ? 'bg-green-800 text-white shadow-inner' : 'text-green-50 hover:bg-green-600'}`}>
                 <Settings className="w-4 h-4" /> Kriterier
               </button>
+              </Tip>
+              <Tip text="Se og ret klubbernes ønsker til stævnet" position="bottom">
               <button onClick={() => setActiveTab('ønsker')} className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-medium transition-colors text-sm ${activeTab === 'ønsker' ? 'bg-green-800 text-white shadow-inner' : 'text-green-50 hover:bg-green-600'}`}>
                 <Sparkles className="w-4 h-4" /> Ønsker
               </button>
+              </Tip>
+              <Tip text="Angiv hvor mange baner hver lokation har" position="bottom">
               <button onClick={() => setActiveTab('baner')} className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-medium transition-colors text-sm ${activeTab === 'baner' ? 'bg-green-800 text-white shadow-inner' : 'text-green-50 hover:bg-green-600'}`}>
                 <MapIcon className="w-4 h-4" /> Baner
               </button>
+              </Tip>
+              <Tip text="Se hvilke klubber der er vært og deres kontaktinfo" position="bottom">
               <button onClick={() => setActiveTab('værtsklubber')} className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-medium transition-colors text-sm ${activeTab === 'værtsklubber' ? 'bg-green-800 text-white shadow-inner' : 'text-green-50 hover:bg-green-600'}`}>
                 <MapPin className="w-4 h-4" /> Værtsklubber
               </button>
+              </Tip>
+              <Tip text="Vejledning og forklaring af programmets funktioner" position="bottom">
               <button onClick={() => setActiveTab('hjælp')} className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-medium transition-colors text-sm ${activeTab === 'hjælp' ? 'bg-green-800 text-white shadow-inner' : 'text-green-50 hover:bg-green-600'}`}>
                 <HelpCircle className="w-4 h-4" /> Hjælp
               </button>
+              </Tip>
             </div>
           </div>
           
           <div className="flex items-center gap-2">
             <input type="file" accept=".json" ref={projectInputRef} onChange={handleLoadProject} className="hidden" />
-            <button 
+            <Tip text="Åbn en stævneplan du har gemt før" position="bottom">
+            <button
               onClick={() => projectInputRef.current?.click()}
               className="flex items-center gap-2 text-white px-3 py-1.5 rounded-md font-medium transition-colors text-sm border border-green-600 bg-green-800 hover:bg-green-900 shadow-sm"
-              title="Åbn et tidligere gemt projekt"
             >
               <FolderOpen className="w-4 h-4" /> Åbn
             </button>
-            <button 
+            </Tip>
+            <Tip text="Gem dit arbejde så du kan fortsætte senere" position="bottom">
+            <button
               onClick={handleSaveProject}
               className="flex items-center gap-2 text-white px-3 py-1.5 rounded-md font-medium transition-colors text-sm border border-green-600 bg-green-800 hover:bg-green-900 shadow-sm"
-              title="Gem dit arbejde som en fil"
             >
               <Save className="w-4 h-4" /> Gem
             </button>
-            <button 
-              onClick={handleDownloadPDF} 
+            </Tip>
+            <Tip text="Hent stævneplanen som et dokument du kan printe" position="bottom">
+            <button
+              onClick={handleDownloadPDF}
               disabled={isGeneratingPDF}
               className={`flex items-center gap-2 text-white px-3 py-1.5 rounded-md font-medium transition-colors text-sm border shadow-sm ${isGeneratingPDF ? 'bg-gray-500 border-gray-600 cursor-wait' : 'bg-green-800 hover:bg-green-900 border-green-600'}`}
             >
               {isGeneratingPDF ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
-              {isGeneratingPDF ? 'Genererer...' : 'PDF'}
+              {isGeneratingPDF ? 'Arbejder...' : 'Hent dokument'}
             </button>
+            </Tip>
           </div>
         </div>
 
@@ -5557,7 +5849,7 @@ export default function App() {
                       {hasActiveRowFilter && <span className="text-[10px] font-medium text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full">{filteredRowIds.size}/{data.length}</span>}
                       <button onClick={() => setRowFilterOpen(true)}
                         className={`p-1 rounded-md transition-colors ${hasActiveRowFilter ? 'text-blue-600 bg-blue-50 hover:bg-blue-100' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                        title="Filtrér rækker">
+                        title="Filtrer og søg i rækker">
                         <Filter className="w-4 h-4" />
                       </button>
                     </div>
@@ -5616,11 +5908,11 @@ export default function App() {
                                     <span className="truncate">{row.name}</span>
                                   </span>
                                   <div className="flex items-center gap-1.5 flex-shrink-0 pl-2">
-                                    {hasErrors && <AlertCircle className="w-4 h-4 text-red-500" title="Der er ubehandlede konflikter i en pulje" />}
-                                    {hasAnyHostConflict && !hasErrors && <AlertTriangle className="w-4 h-4 text-orange-500" title="Der er en værtsklub-konflikt i en pulje" />}
-                                    {row.hasWarning && !hasErrors && !hasAnyHostConflict && <AlertTriangle className="w-4 h-4 text-yellow-500" title="Ikke optimalt holdantal" />}
-                                    {poolSizeIssues.hasSmallPool && <AlertTriangle className="w-4 h-4 text-purple-500" title="En pulje har færre end 4 hold — oversiddere tilføjes ved fordeling" />}
-                                    {poolSizeIssues.hasLargePool && <AlertTriangle className="w-4 h-4 text-red-400" title="En pulje har 8+ hold — ideelt er 4-7 hold pr. pulje" />}
+                                    {hasErrors && <AlertCircle className="w-4 h-4 text-red-500" title="Der er et problem i en pulje som skal løses" />}
+                                    {hasAnyHostConflict && !hasErrors && <AlertTriangle className="w-4 h-4 text-orange-500" title="Der er et problem med værten i en pulje" />}
+                                    {row.hasWarning && !hasErrors && !hasAnyHostConflict && <AlertTriangle className="w-4 h-4 text-yellow-500" title="Antal hold passer ikke optimalt" />}
+                                    {poolSizeIssues.hasSmallPool && <AlertTriangle className="w-4 h-4 text-purple-500" title="En pulje har færre end 4 hold — tomme pladser tilføjes automatisk" />}
+                                    {poolSizeIssues.hasLargePool && <AlertTriangle className="w-4 h-4 text-red-400" title="En pulje har 8 eller flere hold — det ideelle er 4-7 hold pr. pulje" />}
                                     {unassignedTeams > 0 && <span className="bg-orange-100 text-orange-600 text-[10px] px-1.5 py-0.5 rounded-full font-bold">{unassignedTeams}</span>}
                                   </div>
                                 </div>
@@ -5638,17 +5930,21 @@ export default function App() {
                   })}
                 </div>
                 <div className="p-2.5 border-t border-gray-200 flex flex-col gap-1.5">
+                  <Tip text="Opret en ny turneringsrække manuelt" position="top">
                   <button onClick={() => setAddManualRowPrompt(true)} className="w-full flex items-center justify-center gap-2 bg-gray-100 border border-gray-300 text-gray-700 py-1.5 rounded-lg hover:bg-gray-200 transition text-sm font-medium">
                     <Plus className="w-4 h-4 text-green-600" /> Tilføj række
                   </button>
+                  </Tip>
                   <input type="file" accept=".xlsx, .xls, .csv, .txt" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
+                  <Tip text="Hent rækker fra en fil du har hentet fra FODA" position="top">
                   <button onClick={() => fileInputRef.current?.click()} className="w-full flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 py-1.5 rounded-lg hover:bg-gray-50 transition text-sm font-medium">
-                    <Upload className="w-4 h-4 text-green-600" /> Importer rækker
+                    <Upload className="w-4 h-4 text-green-600" /> Hent rækker ind
                   </button>
+                  </Tip>
                 </div>
               </div>
 
-              <div className={`w-1 cursor-col-resize z-20 flex-shrink-0 hover:bg-green-400 transition-colors ${isResizing ? 'bg-green-500' : 'bg-gray-200'}`} onMouseDown={() => setIsResizing(true)} title="Træk for at justere bredden på menuen" />
+              <div className={`w-1 cursor-col-resize z-[5] flex-shrink-0 hover:bg-green-400 transition-colors ${isResizing ? 'bg-green-500' : 'bg-gray-200'}`} onMouseDown={() => setIsResizing(true)} title="Træk for at justere bredden på menuen" />
 
               <div className="flex-1 flex flex-col h-full overflow-hidden">
                 <div className="relative bg-white border-b border-gray-200 px-4 py-2 flex justify-between items-center shadow-sm z-10 flex-shrink-0">
@@ -5657,19 +5953,34 @@ export default function App() {
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                   <div className="flex items-center gap-1.5">
-                    <button onClick={handleAutoFitAllColumns} className="flex items-center gap-1.5 bg-gray-100 text-gray-700 px-2.5 py-1.5 rounded font-medium hover:bg-gray-200 transition-colors text-[11px] shadow-sm border border-gray-200" title="Auto-tilpas bredden på alle kolonner">
-                      <MoveHorizontal className="w-3.5 h-3.5" /> Auto-tilpas
+                    <Tip text="Tilpas bredden på kolonnerne automatisk, så alt passer" position="bottom">
+                    <button onClick={handleAutoFitAllColumns} className="flex items-center gap-1.5 bg-gray-100 text-gray-700 px-2.5 py-1.5 rounded font-medium hover:bg-gray-200 transition-colors text-[11px] shadow-sm border border-gray-200">
+                      <MoveHorizontal className="w-3.5 h-3.5" /> Tilpas bredde
                     </button>
-                    <button onClick={() => handleRandomizeClick('active')} className="flex items-center gap-1.5 bg-green-100 text-green-700 px-2.5 py-1.5 rounded font-medium hover:bg-green-200 transition-colors text-[11px] shadow-sm" title="Omfordel hold i denne række">
+                    </Tip>
+                    <Tip text="Fordel kun værtsklubber til puljerne — holdene flyttes ikke" position="bottom">
+                    <button onClick={() => handleDistributeHostsOnly('active')} className="flex items-center gap-1.5 bg-yellow-100 text-yellow-700 px-2.5 py-1.5 rounded font-medium hover:bg-yellow-200 transition-colors text-[11px] shadow-sm">
+                      <MapPin className="w-3.5 h-3.5" /> Fordel værter
+                    </button>
+                    </Tip>
+                    <Tip text="Fordel holdene i denne række ud i puljer automatisk" position="bottom">
+                    <button onClick={() => handleRandomizeClick('active')} className="flex items-center gap-1.5 bg-green-100 text-green-700 px-2.5 py-1.5 rounded font-medium hover:bg-green-200 transition-colors text-[11px] shadow-sm">
                       <Shuffle className="w-3.5 h-3.5" /> Fordel række
                     </button>
-                    <button onClick={() => handleRandomizeClick('all')} className="flex items-center gap-1.5 bg-blue-100 text-blue-700 px-2.5 py-1.5 rounded font-medium hover:bg-blue-200 transition-colors text-[11px] shadow-sm" title="Omfordel alle hold">
+                    </Tip>
+                    <Tip text="Fordel alle hold i alle rækker på én gang" position="bottom">
+                    <button onClick={() => handleRandomizeClick('all')} className="flex items-center gap-1.5 bg-blue-100 text-blue-700 px-2.5 py-1.5 rounded font-medium hover:bg-blue-200 transition-colors text-[11px] shadow-sm">
                       <Shuffle className="w-3.5 h-3.5" /> Fordel ALLE
                     </button>
-                    <button onClick={() => setValidationModal({ isOpen: true, scope: 'all' })} className="flex items-center gap-1.5 bg-purple-100 text-purple-700 px-2.5 py-1.5 rounded font-medium hover:bg-purple-200 transition-colors text-[11px] shadow-sm" title="Validér fordelingen for alle rækker og puljer">
-                      <ShieldCheck className="w-3.5 h-3.5" /> Validér
+                    </Tip>
+                    <Tip text="Tjek at stævneplanen ser rigtig ud — baner, ønsker og regler" position="bottom">
+                    <button onClick={() => setValidationModal({ isOpen: true, scope: 'all' })} className="flex items-center gap-1.5 bg-purple-100 text-purple-700 px-2.5 py-1.5 rounded font-medium hover:bg-purple-200 transition-colors text-[11px] shadow-sm">
+                      <ShieldCheck className="w-3.5 h-3.5" /> Tjek
                     </button>
-                    <button onClick={() => setGuideStep(1)} className="flex items-center justify-center w-7 h-7 rounded-full bg-amber-400 text-white font-bold text-sm hover:bg-amber-500 transition-colors shadow-sm" title="Vis guide">?</button>
+                    </Tip>
+                    <Tip text="Start stævneguiden — Bolden guider dig igennem det hele!" position="bottom">
+                    <button onClick={() => setGuideStep(1)} className="flex items-center justify-center w-8 h-8 rounded-full bg-white border-2 border-green-500 text-green-700 font-bold text-xs hover:bg-green-50 transition-colors shadow-sm">&#9917;</button>
+                    </Tip>
                   </div>
                   <div className="text-[11px] text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full font-medium">
                       Totalt: <span className="font-bold text-gray-800">{activeRow.teams.filter(t => !t.isBye).length}</span> hold
@@ -5682,8 +5993,8 @@ export default function App() {
                     <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-3 py-2 rounded-lg mb-2 flex items-start gap-2 flex-shrink-0">
                       <AlertTriangle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
                       <div>
-                        <h4 className="font-semibold text-sm">Bemærk: Antal hold ({activeRow.teams.filter(t => !t.isBye).length}) i rækken er ikke optimalt</h4>
-                        <p className="text-xs mt-1">Det er matematisk umuligt at fordele {activeRow.teams.filter(t => !t.isBye).length} hold udelukkende i puljer af 4, 5 eller 6 hold. Mindst én pulje vil få 3 eller 7 hold.</p>
+                        <h4 className="font-semibold text-sm">Bemærk: Antal hold ({activeRow.teams.filter(t => !t.isBye).length}) passer ikke helt optimalt</h4>
+                        <p className="text-xs mt-1">Med {activeRow.teams.filter(t => !t.isBye).length} hold er det ikke muligt at lave puljer der alle har 4, 5 eller 6 hold. Mindst én pulje vil derfor få 3 eller 7 hold.</p>
                       </div>
                     </div>
                   )}
@@ -5696,7 +6007,7 @@ export default function App() {
                       <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                       <div>
                         <h4 className="font-semibold text-sm">For mange hold i en pulje</h4>
-                        <p className="text-xs mt-1">En eller flere puljer har 8+ hold. Ideelt antal er 4-7 hold pr. pulje. Overvej at oprette flere puljer eller flytte hold.</p>
+                        <p className="text-xs mt-1">En eller flere puljer har 8 hold eller mere. Det ideelle er 4-7 hold pr. pulje. Overvej at oprette flere puljer eller flytte hold til en anden pulje.</p>
                       </div>
                     </div>
                   )}
@@ -5865,13 +6176,14 @@ export default function App() {
                             onDragEnd={handlePoolDragEnd}
                             onDragOver={(e) => handlePoolDragOver(e, pool.id)}
                             onDrop={(e) => handlePoolDrop(e, pool.id)}
-                            className={`p-2 border-b flex flex-col group rounded-t-xl cursor-grab active:cursor-grabbing transition-colors ${(hasUnresolvedError || hasAnyHostConflict) ? 'border-red-200 bg-red-50' : hasSpecificRules ? 'border-blue-200 bg-blue-50' : isDragOverHeader ? 'bg-blue-100' : 'border-gray-200 bg-gray-100 hover:bg-gray-200'}`}
+                            className={`p-2 border-b flex flex-col group rounded-t-xl cursor-grab active:cursor-grabbing transition-colors ${pool.isLocked ? 'border-blue-400 bg-blue-50 ring-2 ring-blue-200' : (hasUnresolvedError || hasAnyHostConflict) ? 'border-red-200 bg-red-50' : hasSpecificRules ? 'border-blue-200 bg-blue-50' : isDragOverHeader ? 'bg-blue-100' : 'border-gray-200 bg-gray-100 hover:bg-gray-200'}`}
                           >
                             {/* Linje 1: Puljenavn og Antal */}
                             <div className="flex justify-between items-center w-full mb-0.5">
                                 <div className="flex items-center gap-2 overflow-hidden flex-1 pr-2">
                                   <GripVertical className="w-4 h-4 text-gray-400 opacity-50 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5" />
                                   <div className="flex items-center bg-white/50 border border-transparent hover:border-gray-300 focus-within:border-green-500 focus-within:bg-white rounded px-1 -ml-1 transition-all w-full">
+                                    {pool.isLocked && <Lock className="w-3 h-3 text-blue-500 mr-1 flex-shrink-0" />}
                                     <Edit2 className="w-3 h-3 text-gray-400 mr-1 opacity-0 group-hover:opacity-100 flex-shrink-0" />
                                     <input 
                                       value={pool.name}
@@ -5900,20 +6212,20 @@ export default function App() {
                             </div>
 
                             {/* Linje 2: Menuknapper */}
-                            <div className="flex items-center gap-1.5 w-full mb-1 ml-5 pr-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => handleResetKeys(pool.id)} className="flex items-center justify-center p-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded" title="Opdater nøgler i puljen"><RefreshCw className="w-3.5 h-3.5" /></button>
-                              <button onClick={() => handleAddBye(pool.id)} className="flex items-center justify-center p-1.5 text-purple-600 bg-purple-50 hover:bg-purple-100 rounded" title="Tilføj Oversidder hold"><Coffee className="w-3.5 h-3.5" /></button>
-                              <button onClick={() => openPoolSettings(pool)} className={`flex items-center justify-center p-1.5 rounded ${hasSpecificRules ? 'text-blue-600 bg-blue-50 hover:bg-blue-100' : 'text-gray-600 bg-gray-200 hover:bg-gray-300'}`} title="Pulje Indstillinger"><Settings className="w-3.5 h-3.5" /></button>
+                            <div className={`flex items-center gap-1.5 w-full mb-1 ml-5 pr-4 ${pool.isLocked ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
+                              <Tip text={pool.isLocked ? "Lås puljen op — holdene kan omfordeles igen" : "Lås puljen — bevarer alle hold under omfordeling"}><button onClick={() => handleTogglePoolLock(pool.id)} className={`flex items-center justify-center p-1.5 rounded ${pool.isLocked ? 'text-blue-600 bg-blue-100 hover:bg-blue-200' : 'text-gray-600 bg-gray-200 hover:bg-gray-300'}`}>{pool.isLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}</button></Tip>
+                              <Tip text="Genberegn kamprækkefølgen i puljen"><button onClick={() => handleResetKeys(pool.id)} className="flex items-center justify-center p-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded"><RefreshCw className="w-3.5 h-3.5" /></button></Tip>
+                              <Tip text="Tilføj et oversidder-hold (hold der har fri)"><button onClick={() => handleAddBye(pool.id)} className="flex items-center justify-center p-1.5 text-purple-600 bg-purple-50 hover:bg-purple-100 rounded"><Coffee className="w-3.5 h-3.5" /></button></Tip>
+                              <Tip text="Indstillinger kun for denne pulje"><button onClick={() => openPoolSettings(pool)} className={`flex items-center justify-center p-1.5 rounded ${hasSpecificRules ? 'text-blue-600 bg-blue-50 hover:bg-blue-100' : 'text-gray-600 bg-gray-200 hover:bg-gray-300'}`}><Settings className="w-3.5 h-3.5" /></button></Tip>
                               {availableTemplates.length > 0 && (
-                                 <button 
+                                 <Tip text="Vis oversigt over hvem der møder hvem"><button
                                     onClick={() => setMatrixPreview({ isOpen: true, templateKey: currentTemplate })}
                                     className="flex items-center justify-center p-1.5 text-gray-600 bg-gray-200 hover:bg-gray-300 rounded"
-                                    title="Vis matrix for skabelon"
                                  >
                                     <Grid className="w-3.5 h-3.5" />
-                                 </button>
+                                 </button></Tip>
                               )}
-                              <button onClick={() => confirmDeletePool(pool.id, pool.name, poolTeams.length)} className="flex items-center justify-center p-1.5 text-red-600 bg-red-50 hover:bg-red-100 rounded" title="Slet pulje"><Trash2 className="w-3.5 h-3.5" /></button>
+                              <Tip text="Slet denne pulje"><button onClick={() => confirmDeletePool(pool.id, pool.name, poolTeams.length)} className="flex items-center justify-center p-1.5 text-red-600 bg-red-50 hover:bg-red-100 rounded"><Trash2 className="w-3.5 h-3.5" /></button></Tip>
                             </div>
 
                             {/* Linje 3: Format-knap + Dropdown menu */}
@@ -5931,7 +6243,7 @@ export default function App() {
                                     value={currentTemplate || ''}
                                     onChange={(e) => handleTemplateSelect(pool.id, e.target.value)}
                                     className="flex-1 text-[11px] font-medium text-gray-700 bg-white border border-gray-300 rounded px-1.5 py-1 shadow-sm hover:border-green-400 focus:outline-none focus:border-green-500 cursor-pointer truncate"
-                                    title="Vælg skabelon for denne pulje"
+                                    title="Vælg kampmønster for denne pulje"
                                   >
                                     {availableTemplates.map(tk => (
                                       <option key={tk} value={tk}>{tk}</option>
@@ -6033,7 +6345,7 @@ export default function App() {
                                   <div className="bg-white/60 p-2 rounded border border-red-200 text-red-800 flex flex-col items-start gap-1.5 mt-1">
                                     <div className="flex items-start gap-1.5">
                                       <MessageSquare className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                                      <span><strong>Anbefaling:</strong> Træk et af de berørte hold over i en anden pulje, eller sørg for at de har nøgler der ikke mødes.</span>
+                                      <span><strong>Forslag:</strong> Flyt et af holdene til en anden pulje, eller giv dem pladser hvor de ikke spiller mod hinanden.</span>
                                     </div>
                                     
                                     {unresolvedErrors.map(err => {
@@ -6047,7 +6359,7 @@ export default function App() {
                                                     className="mt-1 w-full flex items-center justify-center gap-1.5 bg-blue-100 hover:bg-blue-200 text-blue-800 py-1.5 px-2 rounded-md border border-blue-300 transition-colors text-xs font-bold shadow-sm"
                                                 >
                                                    <Wrench className="w-3 h-3" />
-                                                   Løs automatisk: Giv holdene nøgle {pair[0]} & {pair[1]} (mødes ikke)
+                                                   Løs automatisk: Giv holdene plads {pair[0]} og {pair[1]} (de mødes ikke)
                                                 </button>
                                              );
                                           }
@@ -6063,7 +6375,7 @@ export default function App() {
                                   {resolvedErrors.map((err, i) => (
                                     <div key={i} className="flex items-start gap-1.5">
                                       <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                                      <span><strong>Klubkonflikt for {err.clubs[0]} løst:</strong> Holdene har nu nøgler, hvor de ikke mødes.</span>
+                                      <span><strong>{err.clubs[0]} — løst:</strong> Holdene har nu pladser hvor de ikke spiller mod hinanden.</span>
                                     </div>
                                   ))}
                                 </div>
@@ -6075,7 +6387,7 @@ export default function App() {
                             <div className="p-2 border-b border-gray-200 bg-green-50/50">
                               <div className="text-xs font-semibold text-green-700 mb-1 flex items-center gap-1">
                                 <MapPin className="w-3 h-3" /> Arrangørklub
-                                <button onClick={() => openHostModePopup(pool)} className="ml-1 p-0.5 rounded hover:bg-green-200 text-green-500 hover:text-green-700 transition-colors" title="Skift mellem Værtsklub og Arrangørklub">
+                                <button onClick={() => openHostModePopup(pool)} className="ml-1 p-0.5 rounded hover:bg-green-200 text-green-500 hover:text-green-700 transition-colors" title="Skift om klubben er vært eller arrangør">
                                   <Settings className="w-3 h-3" />
                                 </button>
                               </div>
@@ -6088,7 +6400,7 @@ export default function App() {
                           <div className={`p-2 border-b border-gray-200 transition-colors ${isDragOverHost ? 'bg-yellow-50 border-yellow-300' : (hasUnresolvedError || hasAnyHostConflict) ? 'bg-transparent' : 'bg-gray-50'}`} onDragOver={(e) => { e.preventDefault(); setDragOverHostPoolId(pool.id); setDragOverPoolId(null); }} onDrop={(e) => handleDropAsHost(e, pool.id)}>
                             <div className="text-xs font-semibold text-gray-500 mb-1 flex items-center gap-1">
                               <MapPin className="w-3 h-3" /> Værtsklub
-                              <button onClick={() => openHostModePopup(pool)} className="ml-1 p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors" title="Skift mellem Værtsklub og Arrangørklub">
+                              <button onClick={() => openHostModePopup(pool)} className="ml-1 p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors" title="Skift om klubben er vært eller arrangør">
                                 <Settings className="w-3 h-3" />
                               </button>
                             </div>
@@ -6109,7 +6421,7 @@ export default function App() {
                                   </button>
                                 )}
                                 <div className="ml-auto flex items-center gap-0.5">
-                                  <button onClick={() => handleTogglePin(hostTeam.id)} className={`${hostTeam.isPinned ? 'opacity-100 text-blue-500 hover:text-blue-700' : 'opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600'} transition-opacity p-1`} title={hostTeam.isPinned ? 'Fjern fiksering' : 'Fiksér hold (pulje + nøgle + rolle)'}>
+                                  <button onClick={() => handleTogglePin(hostTeam.id)} className={`${hostTeam.isPinned ? 'opacity-100 text-blue-500 hover:text-blue-700' : 'opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600'} transition-opacity p-1`} title={hostTeam.isPinned ? 'Fjern låsen' : 'Lås holdet fast (pulje, plads og rolle)'}>
                                     {hostTeam.isPinned ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
                                   </button>
                                   <button onClick={() => { setRenameTeamPrompt({ isOpen: true, teamId: hostTeam.id, currentName: hostTeam.name }); setNewTeamName(hostTeam.name !== 'Oversidder' ? hostTeam.name : ''); }} className={`opacity-0 group-hover:opacity-100 transition-opacity p-1 ${hostTeam.isBye && hostTeam.name !== 'Oversidder' ? 'text-blue-400 hover:text-blue-600' : hostTeam.isBye ? 'text-purple-400 hover:text-purple-600' : 'text-gray-400 hover:text-gray-600'}`} title="Omdøb">
@@ -6126,7 +6438,7 @@ export default function App() {
                                     onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
                                     onDrop={(e) => handleKeyDrop(e, hostTeam.id)}
                                     className={`cursor-grab active:cursor-grabbing flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded transition-transform hover:scale-110 ml-1 ${hostTeam.isBye && hostTeam.name !== 'Oversidder' ? 'bg-blue-200 text-blue-800' : hostTeam.isBye ? 'bg-purple-200 text-purple-800' : 'bg-yellow-200 text-yellow-800 hover:bg-yellow-300'}`}
-                                    title="Træk her for at bytte Foda-nøgle med et andet hold"
+                                    title="Træk for at bytte plads med et andet hold"
                                   >
                                     <Key className="w-3 h-3" /> {hostTeam.fodaKey || 1}
                                   </span>
@@ -6158,7 +6470,7 @@ export default function App() {
                                   {team.isPinned && <Lock className="w-3 h-3 text-blue-500 flex-shrink-0" />}
                                   <div className="font-medium truncate text-sm flex-1">{team.name}</div>
                                   <div className="ml-auto flex items-center gap-0.5">
-                                    <button onClick={() => handleTogglePin(team.id)} className={`${team.isPinned ? 'opacity-100 text-blue-500 hover:text-blue-700' : 'opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600'} transition-opacity p-1`} title={team.isPinned ? 'Fjern fiksering' : 'Fiksér hold (pulje + nøgle)'}>
+                                    <button onClick={() => handleTogglePin(team.id)} className={`${team.isPinned ? 'opacity-100 text-blue-500 hover:text-blue-700' : 'opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600'} transition-opacity p-1`} title={team.isPinned ? 'Fjern låsen' : 'Lås holdet fast (pulje og plads)'}>
                                       {team.isPinned ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
                                     </button>
                                     <button onClick={() => { setRenameTeamPrompt({ isOpen: true, teamId: team.id, currentName: team.name }); setNewTeamName(team.name !== 'Oversidder' ? team.name : ''); }} className={`opacity-0 group-hover:opacity-100 transition-opacity p-1 ${isRenamedBye ? 'text-blue-400 hover:text-blue-600' : team.isBye ? 'text-purple-400 hover:text-purple-600' : 'text-gray-400 hover:text-gray-600'}`} title="Omdøb">
@@ -6175,7 +6487,7 @@ export default function App() {
                                       onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
                                       onDrop={(e) => handleKeyDrop(e, team.id)}
                                       className={`cursor-grab active:cursor-grabbing flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded transition-transform hover:scale-110 ml-1 ${isRenamedBye ? 'bg-blue-200 text-blue-800' : team.isBye ? 'bg-purple-200 text-purple-800' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
-                                      title="Træk her for at bytte Foda-nøgle med et andet hold"
+                                      title="Træk for at bytte plads med et andet hold"
                                     >
                                       <Key className="w-3 h-3" /> {team.fodaKey || '-'}
                                     </span>
@@ -6404,7 +6716,7 @@ export default function App() {
                             <button
                               onClick={() => handleTogglePinForRow(col.rowId, col.host.id)}
                               className={`p-1 rounded transition-colors ${col.host.isPinned ? 'text-blue-500 hover:text-blue-700' : 'text-gray-300 hover:text-gray-500'}`}
-                              title={col.host.isPinned ? 'Fjern fiksering' : 'Fiksér vært'}
+                              title={col.host.isPinned ? 'Fjern låsen' : 'Lås vært fast'}
                             >
                               {col.host.isPinned ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
                             </button>
@@ -6429,7 +6741,7 @@ export default function App() {
                                 <button
                                   onClick={() => handleTogglePinForRow(col.rowId, team.id)}
                                   className={`p-1 rounded transition-colors ${team.isPinned ? 'text-blue-500 hover:text-blue-700' : 'text-gray-300 hover:text-gray-500'}`}
-                                  title={team.isPinned ? 'Fjern fiksering' : 'Fiksér hold'}
+                                  title={team.isPinned ? 'Fjern låsen' : 'Lås hold fast'}
                                 >
                                   {team.isPinned ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
                                 </button>
@@ -6604,7 +6916,7 @@ export default function App() {
                            <div className="text-center">
                              <Check className="w-16 h-16 text-green-500 mx-auto mb-3" />
                              <h4 className="font-bold text-green-800 text-lg mb-2">Alle hold møder alle andre hold</h4>
-                             <p className="text-green-700 text-sm max-w-md mx-auto">I denne skabelon møder hvert hold alle andre hold. Der er ingen nøglekonflikter mulige, og matrixen er derfor ikke nødvendig at vise.</p>
+                             <p className="text-green-700 text-sm max-w-md mx-auto">I dette kampmønster møder hvert hold alle andre hold. Der kan ikke opstå problemer med pladserne.</p>
                            </div>
                          </div>
                          {Object.keys(popupLastOpp).length > 0 && (
@@ -6667,7 +6979,7 @@ export default function App() {
                      {hasPartialDobbelt && (
                        <div className="bg-amber-50 p-5 rounded-xl border border-amber-200 mt-4 mb-2">
                          <h4 className="font-bold text-amber-800 mb-2 flex items-center gap-2"><AlertTriangle className="w-5 h-5" /> Hvem møder hinanden 2+ gange?</h4>
-                         <p className="text-amber-700 text-sm mb-3">Disse nøgler møder hinanden mere end én gang i skabelonen.</p>
+                         <p className="text-amber-700 text-sm mb-3">Disse pladser spiller mod hinanden mere end én gang i kampmønsteret.</p>
                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                            {Array.from({ length: s }).map((_, i) => {
                              const partners = popupMeetMultiple[i + 1] || [];
@@ -6706,7 +7018,7 @@ export default function App() {
               </p>
               <div className="flex flex-col gap-3">
                 <button onClick={() => confirmTemplateChange(true)} className="w-full bg-blue-50 text-blue-700 border border-blue-200 py-2.5 rounded-lg font-medium hover:bg-blue-100 transition-colors flex justify-center items-center gap-2">
-                   <RefreshCw className="w-4 h-4" /> Opdater nøgler i puljen nu
+                   <RefreshCw className="w-4 h-4" /> Genberegn kamprækkefølgen
                 </button>
                 <button onClick={() => confirmTemplateChange(false)} className="w-full bg-gray-50 text-gray-700 border border-gray-200 py-2.5 rounded-lg font-medium hover:bg-gray-100 transition-colors">
                    Kun gem valg (behold nuværende nøgler)
@@ -6728,16 +7040,23 @@ export default function App() {
                 <br/><br/>
                 Hvor mange puljer vil du oprette?
               </p>
-              
+
               <div className="flex items-center justify-center gap-6 mb-8 bg-gray-50 py-4 rounded-xl border border-gray-200">
                 <button onClick={() => setCreatePoolsPrompt(p => ({...p, count: Math.max(1, p.count - 1)}))} className="w-12 h-12 rounded-full bg-white border border-gray-300 shadow-sm flex items-center justify-center hover:bg-gray-100 hover:border-gray-400 font-bold text-2xl transition-all">-</button>
                 <span className="text-4xl font-bold text-gray-800 w-16 text-center">{createPoolsPrompt.count}</span>
                 <button onClick={() => setCreatePoolsPrompt(p => ({...p, count: p.count + 1}))} className="w-12 h-12 rounded-full bg-white border border-gray-300 shadow-sm flex items-center justify-center hover:bg-gray-100 hover:border-gray-400 font-bold text-2xl transition-all">+</button>
               </div>
 
+              {createPoolsPrompt.mode === 'hostsOnly' && (
+                <label className="flex items-center gap-2 mb-4 cursor-pointer select-none bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3">
+                  <input type="checkbox" checked={createPoolsPrompt.scope === 'all'} onChange={(e) => setCreatePoolsPrompt(p => ({...p, scope: e.target.checked ? 'all' : 'active'}))} className="w-4 h-4 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500 cursor-pointer" />
+                  <span className="text-sm text-gray-700 font-medium">Fordel værter i alle rækker</span>
+                </label>
+              )}
+
               <div className="flex gap-3">
-                <button onClick={() => setCreatePoolsPrompt({ isOpen: false, count: 1, scope: null })} className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-200 transition-colors">Annuller</button>
-                <button onClick={handleCreatePoolsAndRandomize} className="flex-1 bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors shadow-sm">Opret og Fordel</button>
+                <button onClick={() => setCreatePoolsPrompt({ isOpen: false, count: 1, scope: null, mode: 'randomize' })} className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-200 transition-colors">Annuller</button>
+                <button onClick={handleCreatePoolsAndRandomize} className={`flex-1 py-3 rounded-lg font-medium transition-colors shadow-sm ${createPoolsPrompt.mode === 'hostsOnly' ? 'bg-yellow-500 text-white hover:bg-yellow-600' : 'bg-green-600 text-white hover:bg-green-700'}`}>{createPoolsPrompt.mode === 'hostsOnly' ? (createPoolsPrompt.scope === 'all' ? 'Opret og Fordel værter (alle)' : 'Opret og Fordel værter') : 'Opret og Fordel'}</button>
               </div>
             </div>
           </div>
@@ -6750,7 +7069,7 @@ export default function App() {
               <p className="text-gray-600 mb-6">Der er <strong>{deletePrompt.teamCount} hold</strong> i denne pulje. Hvad skal der ske med dem?</p>
               <div className="flex flex-col gap-3">
                 {activeRow.pools.length > 1 && (
-                  <button onClick={() => executeDeletePool('distribute')} className="w-full bg-blue-50 text-blue-700 border border-blue-200 py-2.5 rounded-lg font-medium hover:bg-blue-100 transition-colors">Fordel holdene tilfældigt i de ANDRE puljer</button>
+                  <button onClick={() => executeDeletePool('distribute')} className="w-full bg-blue-50 text-blue-700 border border-blue-200 py-2.5 rounded-lg font-medium hover:bg-blue-100 transition-colors">Flyt holdene ud i de andre puljer</button>
                 )}
                 <button onClick={() => executeDeletePool('unassigned')} className="w-full bg-orange-50 text-orange-700 border border-orange-200 py-2.5 rounded-lg font-medium hover:bg-orange-100 transition-colors">Flyt holdene tilbage til "Ikke-fordelte"</button>
                 <button onClick={() => setDeletePrompt({ isOpen: false, poolId: null, poolName: '', teamCount: 0 })} className="w-full mt-2 bg-gray-100 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition-colors">Annuller</button>
@@ -6779,7 +7098,7 @@ export default function App() {
               <p className="text-gray-600 mb-6">Der er allerede hold placeret i {reshufflePrompt.scope === 'active' ? 'denne rækkes' : 'rækkernes'} puljer. Vil du beholde dem, eller skal rækken nulstilles og alle hold blandes forfra?</p>
               <div className="flex flex-col gap-3">
                 <button onClick={() => { const s = reshufflePrompt.scope; setReshufflePrompt({ isOpen: false, scope: null }); executeRandomizeWithRetry('all', s); }} className="w-full bg-red-50 text-red-700 border border-red-200 py-2.5 rounded-lg font-medium hover:bg-red-100 transition-colors flex justify-center items-center gap-2">Nulstil og omfordel ALLE hold</button>
-                <button onClick={() => { const s = reshufflePrompt.scope; setReshufflePrompt({ isOpen: false, scope: null }); executeRandomizeWithRetry('unassigned', s); }} className="w-full bg-blue-50 text-blue-700 border border-blue-200 py-2.5 rounded-lg font-medium hover:bg-blue-100 transition-colors flex justify-center items-center gap-2">Fordel KUN ikke-fordelte hold</button>
+                <button onClick={() => { const s = reshufflePrompt.scope; setReshufflePrompt({ isOpen: false, scope: null }); executeRandomizeWithRetry('unassigned', s); }} className="w-full bg-blue-50 text-blue-700 border border-blue-200 py-2.5 rounded-lg font-medium hover:bg-blue-100 transition-colors flex justify-center items-center gap-2">Fordel kun de hold der ikke har en pulje endnu</button>
                 <button onClick={() => setReshufflePrompt({ isOpen: false, scope: null })} className="w-full mt-2 bg-gray-100 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition-colors">Annuller</button>
               </div>
             </div>
@@ -7511,34 +7830,88 @@ export default function App() {
       </div>
       {/* === INTERAKTIV GUIDE-WIZARD (flytbar) === */}
       {guideStep !== null && (
-        <div className="fixed z-[100] w-[420px] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden"
-             style={{ top: `calc(4rem + ${guideDrag.y}px)`, left: `calc(50% - 210px + ${guideDrag.x}px)` }}>
-          <div className="bg-green-700 text-white px-5 py-3 flex justify-between items-center cursor-grab active:cursor-grabbing select-none"
+        <div className="fixed z-[100] bg-white rounded-2xl shadow-2xl border-2 border-green-300 overflow-visible select-none flex flex-col"
+             style={{ width: guideSize.w, ...(guideSize.h ? { height: guideSize.h } : {}), top: `calc(4rem + ${guideDrag.y}px)`, left: `calc(50% - ${guideSize.w / 2}px + ${guideDrag.x}px)` }}>
+
+          {/* Resize-håndtag: venstre kant */}
+          <div className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize z-10 hover:bg-green-400/20 rounded-l-2xl"
+               onMouseDown={(e) => handleGuideResizeStart(e, 'left')} />
+          {/* Resize-håndtag: højre kant */}
+          <div className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize z-10 hover:bg-green-400/20 rounded-r-2xl"
+               onMouseDown={(e) => handleGuideResizeStart(e, 'right')} />
+          {/* Resize-håndtag: bund */}
+          <div className="absolute left-0 right-0 bottom-0 h-2 cursor-ns-resize z-10 hover:bg-green-400/20 rounded-b-2xl"
+               onMouseDown={(e) => handleGuideResizeStart(e, 'bottom')} />
+          {/* Resize-håndtag: nederste højre hjørne */}
+          <div className="absolute right-0 bottom-0 w-5 h-5 cursor-nwse-resize z-20 flex items-center justify-center"
+               onMouseDown={(e) => handleGuideResizeStart(e, 'corner')}>
+            <svg width="10" height="10" viewBox="0 0 10 10" className="text-green-400 opacity-60 hover:opacity-100 transition-opacity">
+              <path d="M9 1L1 9M9 5L5 9M9 9L9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </div>
+
+          {/* Header med Bolden-maskot */}
+          <div className="bg-gradient-to-r from-green-700 to-green-600 text-white flex items-center gap-3 cursor-grab active:cursor-grabbing rounded-t-xl overflow-hidden flex-shrink-0"
+               style={{ padding: `${10 * guideScale}px ${16 * guideScale}px` }}
                onMouseDown={handleGuideDragStart}>
-            <span className="font-bold text-sm flex items-center gap-2">
-              <Zap className="w-4 h-4 text-amber-300" />
-              {GUIDE_STEPS[guideStep - 1].titel}
-            </span>
-            <span className="text-green-200 text-xs font-medium">{guideStep} / {GUIDE_STEPS.length}</span>
+            <div className="relative flex-shrink-0" style={{ width: 40 * guideScale, height: 40 * guideScale }}>
+              <svg viewBox="0 0 40 40" style={{ width: 40 * guideScale, height: 40 * guideScale }} className="drop-shadow-md">
+                <circle cx="20" cy="20" r="18" fill="white" stroke="#166534" strokeWidth="2"/>
+                <path d="M20 5 L25 13 L22 22 L18 22 L15 13 Z" fill="#166534" opacity="0.2"/>
+                <path d="M35 17 L30 22 L25 18 L27 12 L33 11 Z" fill="#166534" opacity="0.15"/>
+                <path d="M5 17 L10 22 L15 18 L13 12 L7 11 Z" fill="#166534" opacity="0.15"/>
+                <path d="M12 33 L17 28 L23 28 L28 33 L24 37 L16 37 Z" fill="#166534" opacity="0.15"/>
+                <ellipse cx="14" cy="17" rx="2.5" ry="3" fill="#1a1a1a"/>
+                <ellipse cx="26" cy="17" rx="2.5" ry="3" fill="#1a1a1a"/>
+                <circle cx="15" cy="16" r="1" fill="white"/>
+                <circle cx="27" cy="16" r="1" fill="white"/>
+                <path d="M13 24 Q20 31 27 24" stroke="#1a1a1a" strokeWidth="2" fill="none" strokeLinecap="round"/>
+                <circle cx="10" cy="23" r="2.5" fill="#ff9999" opacity="0.4"/>
+                <circle cx="30" cy="23" r="2.5" fill="#ff9999" opacity="0.4"/>
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="font-bold truncate" style={{ fontSize: 14 * guideScale }}>{GUIDE_STEPS[guideStep - 1].titel}</div>
+              <div className="text-green-200 font-medium" style={{ fontSize: 10 * guideScale }}>Bolden guider dig — trin {guideStep} af {GUIDE_STEPS.length}</div>
+            </div>
+            <span className="text-white/70 flex-shrink-0 cursor-grab" style={{ fontSize: 10 * guideScale }} title="Træk mig rundt!">&#x2630;</span>
           </div>
-          <div className="p-5">
-            <p className="text-sm text-gray-700 leading-relaxed">{GUIDE_STEPS[guideStep - 1].tekst}</p>
+
+          {/* Tekst-indhold — scrollbar hvis højde er sat */}
+          <div className="bg-green-50/30 flex-1 overflow-auto" style={{ padding: `${16 * guideScale}px ${20 * guideScale}px` }}>
+            <p className="text-gray-700 leading-relaxed" style={{ fontSize: 14 * guideScale }}>{GUIDE_STEPS[guideStep - 1].tekst}</p>
           </div>
-          <div className="px-5 pb-4 flex justify-between items-center">
-            <div className="flex gap-1.5">
+
+          {/* Footer */}
+          <div className="flex justify-between items-center border-t border-green-100 flex-shrink-0" style={{ padding: `${8 * guideScale}px ${16 * guideScale}px ${12 * guideScale}px` }}>
+            <div className="flex" style={{ gap: 4 * guideScale }}>
               {GUIDE_STEPS.map((_, i) => (
-                <div key={i} className={`w-2 h-2 rounded-full transition-colors ${i + 1 === guideStep ? 'bg-green-600' : i + 1 < guideStep ? 'bg-green-300' : 'bg-gray-200'}`} />
+                <div key={i} className={`rounded-full transition-all ${i + 1 === guideStep ? 'bg-green-600 scale-125' : i + 1 < guideStep ? 'bg-green-400' : 'bg-gray-200'}`}
+                     style={{ width: 8 * guideScale, height: 8 * guideScale }} />
               ))}
             </div>
-            <div className="flex gap-2">
-              <button onClick={() => setGuideStep(null)} className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors">Afvis</button>
+            <div className="flex items-center" style={{ gap: 6 * guideScale }}>
+              <button onClick={() => setGuideStep(null)} className="text-gray-400 hover:text-gray-600 transition-colors" style={{ fontSize: 11 * guideScale, padding: `${4 * guideScale}px ${8 * guideScale}px` }}>Sæt mig på bænken</button>
+              {guideStep > 1 && (
+                <button onClick={() => { const prev = guideStep - 1; setGuideStep(prev); setActiveTab(GUIDE_STEPS[prev - 1].tab); setGuideDrag({ x: 0, y: 0 }); }} className="bg-gray-100 text-gray-600 font-bold rounded-lg hover:bg-gray-200 transition-colors border border-gray-200" style={{ fontSize: 11 * guideScale, padding: `${4 * guideScale}px ${10 * guideScale}px` }}>
+                  &larr; Spil bagud
+                </button>
+              )}
               {guideStep < GUIDE_STEPS.length ? (
-                <button onClick={() => { const next = guideStep + 1; setGuideStep(next); setActiveTab(GUIDE_STEPS[next - 1].tab); setGuideDrag({ x: 0, y: 0 }); }} className="px-4 py-1.5 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700 transition-colors">
-                  Næste &rarr;
+                <button onClick={() => { const next = guideStep + 1; setGuideStep(next); setActiveTab(GUIDE_STEPS[next - 1].tab); setGuideDrag({ x: 0, y: 0 }); }} className="bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors shadow-sm" style={{ fontSize: 11 * guideScale, padding: `${4 * guideScale}px ${12 * guideScale}px` }}>
+                  {[
+                    'Giv bolden op! →',
+                    'Drible fremad →',
+                    'Lang bold frem! →',
+                    'FREM! →',
+                    'Spil den dyb! →',
+                    'SKYD! →',
+                    'MÅÅÅÅL! →',
+                  ][guideStep - 1] || 'Fremad →'}
                 </button>
               ) : (
-                <button onClick={() => setGuideStep(null)} className="px-4 py-1.5 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700 transition-colors">
-                  Afslut
+                <button onClick={() => setGuideStep(null)} className="bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors shadow-sm" style={{ fontSize: 12 * guideScale, padding: `${5 * guideScale}px ${14 * guideScale}px` }}>
+                  Fløjt! Kampen er slut ⚽
                 </button>
               )}
             </div>
