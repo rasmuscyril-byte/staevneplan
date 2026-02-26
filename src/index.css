@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+@media print {
+  .print\:hidden {
+    display: none !important;
+  }
+  .print\:block {
+    display: block !important;
+  }
+}
+
+.page-break-after-always {
+  page-break-after: always;
+}
+
+.page-break-inside-avoid {
+  page-break-inside: avoid;
+}
