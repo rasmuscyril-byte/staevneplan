@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Users, LayoutGrid, Plus, Trash2, GripVertical, Trophy, ChevronRight, Shuffle, Upload, AlertTriangle, MapPin, Settings, AlertCircle, Check, Info, Printer, Edit2, MoveHorizontal, Loader2, Calendar, Coffee, X, Key, MessageSquare, RefreshCw, Star, ChevronDown, ChevronUp, Wrench, Grid, Save, FolderOpen, ShieldCheck, Download, UserCheck, Sparkles, Search, List, Wand2, Mail, Phone, Copy, History, Shield, Filter, ArrowUpDown, Map as MapIcon, Clock, Lock, Unlock, Link, Minus, HelpCircle, BookOpen, Zap, Target, FileText } from 'lucide-react';
+import ReactDOM from 'react-dom';
+import { Users, LayoutGrid, Plus, Trash2, GripVertical, Trophy, ChevronRight, Shuffle, Upload, AlertTriangle, MapPin, Settings, AlertCircle, Check, Info, Printer, Edit2, MoveHorizontal, Loader2, Calendar, Coffee, X, Key, MessageSquare, RefreshCw, Star, ChevronDown, ChevronUp, Wrench, Grid, Save, FolderOpen, ShieldCheck, Download, UserCheck, Sparkles, Search, List, Wand2, Mail, Phone, Copy, History, Shield, Filter, ArrowUpDown, Map as MapIcon, Clock, Lock, Unlock, Link, Minus, HelpCircle, BookOpen, Zap, Target, FileText, Car, Navigation } from 'lucide-react';
 import html2canvas from 'html2canvas-pro';
 import { jsPDF } from 'jspdf';
 import * as XLSX from 'xlsx';
+import { DRIVE_TIME_MATRIX, DISTANCE_MATRIX, DRIVE_TIME_CLUBS, CLUB_INFO } from './driveData.js';
+import { DEFAULT_WISHES_ROWS } from './defaultWishes.js';
+import dbuSegl from './assets/dbu-segl.svg';
 
 // --- HJÆLPE-TALEBOBLE (TOOLTIP) KOMPONENT ---
 const HelpTip = ({ text, position = 'top' }) => (
@@ -16,15 +20,51 @@ const HelpTip = ({ text, position = 'top' }) => (
 );
 
 // --- TOOLTIP WRAPPER – pæn taleboble der vises ved hover ---
-const Tip = ({ text, position = 'top', children }) => (
-  <span className="relative group/ttip inline-flex">
-    {children}
-    <span className={`absolute ${position === 'top' ? 'bottom-full mb-2' : position === 'bottom' ? 'top-full mt-2' : position === 'left' ? 'right-full mr-2 top-1/2 -translate-y-1/2' : 'left-full ml-2 top-1/2 -translate-y-1/2'} ${position === 'top' || position === 'bottom' ? 'left-1/2 -translate-x-1/2' : ''} px-2.5 py-1.5 bg-gray-800 text-white text-[11px] rounded-lg shadow-lg opacity-0 group-hover/ttip:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-[70] leading-snug max-w-xs`} style={{ whiteSpace: 'normal', width: 'max-content', maxWidth: '220px' }}>
-      {text}
-      <span className={`absolute ${position === 'top' ? 'top-full left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800' : position === 'bottom' ? 'bottom-full left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800' : position === 'left' ? 'left-full top-1/2 -translate-y-1/2 border-t-4 border-b-4 border-l-4 border-transparent border-l-gray-800' : 'right-full top-1/2 -translate-y-1/2 border-t-4 border-b-4 border-r-4 border-transparent border-r-gray-800'} w-0 h-0`}></span>
+const Tip = ({ text, position = 'top', children, fixed = false }) => {
+  const [show, setShow] = React.useState(false);
+  const [coords, setCoords] = React.useState(null);
+  const ref = React.useRef(null);
+
+  // Fixed mode: bruger position:fixed så tooltip escaper overflow-containere
+  if (fixed) {
+    const handleEnter = () => {
+      if (ref.current) {
+        const r = ref.current.getBoundingClientRect();
+        setCoords(r);
+        setShow(true);
+      }
+    };
+    return (
+      <span ref={ref} className="relative inline-flex" onMouseEnter={handleEnter} onMouseLeave={() => setShow(false)}>
+        {children}
+        {show && coords && ReactDOM.createPortal(
+          <span className="fixed px-2.5 py-1.5 bg-gray-800 text-white text-[11px] rounded-lg shadow-lg pointer-events-none z-[9999] leading-snug"
+            style={{
+              top: position === 'bottom' ? coords.bottom + 8 : position === 'top' ? coords.top - 8 : coords.top + coords.height / 2,
+              left: position === 'right' ? coords.right + 8 : position === 'left' ? coords.left - 8 : coords.left + coords.width / 2,
+              transform: position === 'top' ? 'translate(-50%, -100%)' : position === 'bottom' ? 'translate(-50%, 0)' : position === 'left' ? 'translate(-100%, -50%)' : 'translate(0, -50%)',
+              whiteSpace: 'normal', width: 'max-content', maxWidth: '220px'
+            }}>
+            {text}
+            <span className={`absolute ${position === 'top' ? 'top-full left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800' : position === 'bottom' ? 'bottom-full left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800' : position === 'left' ? 'left-full top-1/2 -translate-y-1/2 border-t-4 border-b-4 border-l-4 border-transparent border-l-gray-800' : 'right-full top-1/2 -translate-y-1/2 border-t-4 border-b-4 border-r-4 border-transparent border-r-gray-800'} w-0 h-0`}></span>
+          </span>,
+          document.body
+        )}
+      </span>
+    );
+  }
+
+  // Standard mode: CSS-only tooltip med absolute positionering
+  return (
+    <span className="relative group/ttip inline-flex">
+      {children}
+      <span className={`absolute ${position === 'top' ? 'bottom-full mb-2' : position === 'bottom' ? 'top-full mt-2' : position === 'left' ? 'right-full mr-2 top-1/2 -translate-y-1/2' : 'left-full ml-2 top-1/2 -translate-y-1/2'} ${position === 'top' || position === 'bottom' ? 'left-1/2 -translate-x-1/2' : ''} px-2.5 py-1.5 bg-gray-800 text-white text-[11px] rounded-lg shadow-lg opacity-0 group-hover/ttip:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-[70] leading-snug max-w-xs`} style={{ whiteSpace: 'normal', width: 'max-content', maxWidth: '220px' }}>
+        {text}
+        <span className={`absolute ${position === 'top' ? 'top-full left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800' : position === 'bottom' ? 'bottom-full left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800' : position === 'left' ? 'left-full top-1/2 -translate-y-1/2 border-t-4 border-b-4 border-l-4 border-transparent border-l-gray-800' : 'right-full top-1/2 -translate-y-1/2 border-t-4 border-b-4 border-r-4 border-transparent border-r-gray-800'} w-0 h-0`}></span>
+      </span>
     </span>
-  </span>
-);
+  );
+};
 
 // --- GUIDE-TRIN TIL ONBOARDING WIZARD ("Bolden") ---
 const GUIDE_STEPS = [
@@ -32,7 +72,7 @@ const GUIDE_STEPS = [
   { titel: 'Hent dine rækker ind', tab: 'rækker', tekst: <>Første skridt på banen! Hent dine turneringsrækker ind i programmet. Klik på <strong>Hent rækker ind</strong> i menuen til venstre, og vælg den fil du har hentet fra foda (den hedder typisk "RækkePuljeOversigt").</> },
   { titel: 'Hvad ønsker klubberne?', tab: 'ønsker', tekst: <>Godt tackle! Nu skal vi have klubbernes ønsker med. Klik på <strong>Indlæs ønskefil</strong> herover — jeg finder selv ud af hvad klubberne vil, f.eks. om de gerne vil være vært, eller om bestemte hold skal i samme pulje.</> },
   { titel: 'Sæt spillereglerne', tab: 'kriterier', tekst: <>Her bestemmer du reglerne for kampen! Vælg f.eks. at hold fra samme klub ikke må havne i samme pulje, eller at holdene skal samles så familierne ikke skal køre for langt. Når du er klar, tryk <strong>FREM!</strong></> },
-  { titel: 'Fløjt — fordel holdene!', tab: 'rækker', tekst: <>Nu er det showtime! Klik på <strong>Fordel ALLE</strong> i knapperne øverst, og lad mig fordele alle holdene i puljer. Jeg tager hensyn til alle dine regler og ønsker.</> },
+  { titel: 'Fløjt — fordel holdene!', tab: 'rækker', tekst: <>Nu er det showtime! Klik på <strong>Fordel ALT</strong> for at tildele værter og fordele alle hold på én gang — eller brug <strong>Fordel værter</strong> og <strong>Fordel øvrige</strong> hver for sig. Jeg tager hensyn til alle dine regler og ønsker.</> },
   { titel: 'VAR-tjek!', tab: 'rækker', tekst: <>Lige som VAR i en rigtig kamp — lad os tjekke at alt er i orden! Klik på <strong>Tjek</strong> for at sikre at værterne har nok baner, og at klubbernes ønsker er opfyldt.</> },
   { titel: 'Hent din stævneplan!', tab: 'rækker', tekst: <>Flot spillet, makker! Nu kan du hente den færdige stævneplan som et dokument du kan printe eller sende videre — klik på <strong>Hent dokument</strong> øverst til højre. Så får du hele planen pænt og klart!</> },
   { titel: 'Gem dit arbejde', tab: 'rækker', tekst: <>Sidste fløjt! Husk at gemme dit arbejde med <strong>Gem</strong> øverst til højre, så du kan åbne det igen en anden dag med <strong>Åbn</strong>. Og husk — der gives hverken gule eller røde kort herinde! Du kan ikke gøre noget forkert. Så kig dig omkring, tryk på alt hvad du har lyst til, og leg med det. Vi ses til næste kamp!</> },
@@ -147,7 +187,7 @@ const renderContactInfo = (text) => {
     if (/^[\s\-\+\d]+$/.test(part) && part.replace(/[\s\-\+]/g, '').length >= 8) {
       const cleanPhone = part.replace(/[\s-]/g, ''); // Fjerner mellemrum til selve opkaldet
       return (
-        <a key={i} href={`tel:${cleanPhone}`} className="text-green-600 hover:text-green-800 underline transition-colors inline-flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+        <a key={i} href={`tel:${cleanPhone}`} className="text-[#c90b0e] hover:text-[#9c0f06] underline transition-colors inline-flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
           <Phone className="w-3 h-3" />{part}
         </a>
       );
@@ -632,150 +672,332 @@ const getLastOpponents = (templateName, matrix, schedules) => {
 
 // --- BANE-DATA OG FUNKTIONER ---
 const CLUBS_DATA = [
-  { name: "Allesø", p5: "4", p8: "0", p3: "0", comment: "" },
-  { name: "Allested", p5: "2", p8: "1(2)", p3: "2", comment: "" },
-  { name: "Assens", p5: "3", p8: "0", p3: "0", comment: "" },
-  { name: "Aunslev", p5: "2", p8: "0", p3: "0", comment: "" },
+  { name: "Allesø", p5: "4", p8: "1", p3: "1", comment: "" },
+  { name: "Allested", p5: "2", p8: "1", p3: "2", comment: "" },
+  { name: "Assens", p5: "3", p8: "1", p3: "1", comment: "" },
+  { name: "Aunslev", p5: "2", p8: "1", p3: "1", comment: "" },
   { name: "B 1909", p5: "4", p8: "2", p3: "3", comment: "" },
   { name: "B1913", p5: "6", p8: "4", p3: "3", comment: "kan lave 6 5:5-baner. Men skriv og hør." },
   { name: "BBB", p5: "4", p8: "1", p3: "6", comment: "" },
+  { name: "BK Stjernen af 1968", p5: "4", p8: "2", p3: "2", comment: "" },
   { name: "Bogense G & IF", p5: "4", p8: "2", p3: "6", comment: "3 på kunst og 3 på græs" },
-  { name: "Brenderup IF", p5: "2", p8: "3", p3: "(3)", comment: "" },
+  { name: "Boldklubben Marienlyst", p5: "6", p8: "8", p3: "6", comment: "Lægger oven i hinanden" },
+  { name: "Brenderup IF", p5: "2", p8: "3", p3: "3", comment: "" },
   { name: "Brylle", p5: "2", p8: "2", p3: "3", comment: "" },
-  { name: "Båring", p5: "3", p8: "0", p3: "0", comment: "" },
-  { name: "Dalby", p5: "2", p8: "2", p3: "0", comment: "" },
-  { name: "Dalum IF", p5: "4", p8: "2", p3: "0", comment: "5 mands på Tingløkkeskolen - 3 og 8 mands på Dalum stadion - Har tidligere sagt at de ikke kan lave 3v3 og 8v8 stævner" },
+  { name: "Båring", p5: "3", p8: "1", p3: "1", comment: "" },
+  { name: "Dalby", p5: "2", p8: "2", p3: "1", comment: "" },
+  { name: "Dalum IF", p5: "4", p8: "2", p3: "1", comment: "5 mands på Tingløkkeskolen - 3 og 8 mands på Dalum stadion - Har tidligere sagt at de ikke kan lave 3v3 og 8v8 stævner" },
   { name: "Ebberup", p5: "3", p8: "2", p3: "3", comment: "" },
-  { name: "Egebjerg Fodbold", p5: "2", p8: "0", p3: "0", comment: "" },
-  { name: "ERI", p5: "4", p8: "0", p3: "0", comment: "Placer stævner i starten af foråret og i slut efteråret" },
+  { name: "Egebjerg Fodbold", p5: "2", p8: "1", p3: "1", comment: "" },
+  { name: "ERI", p5: "4", p8: "1", p3: "1", comment: "Placer stævner i starten af foråret og i slut efteråret" },
   { name: "FC Broby", p5: "3", p8: "7", p3: "2", comment: "" },
-  { name: "Flemløse", p5: "2", p8: "0", p3: "2", comment: "Kan lave flere 3:3 baner. Tom" },
-  { name: "Fjelsted Harndrup", p5: "2", p8: "0", p3: "0", comment: "" },
-  { name: "Fjordager IF", p5: "6", p8: "0", p3: "5", comment: "" },
-  { name: "Fraugde", p5: "4", p8: "4", p3: "2", comment: "" },
   { name: "FC Faaborg", p5: "3", p8: "2", p3: "3", comment: "" },
-  { name: "Gelsted G & IF", p5: "4", p8: "0", p3: "0", comment: "" },
-  { name: "Glamsbjerg IF", p5: "2", p8: "2", p3: "0", comment: "" },
-  { name: "Hesselager", p5: "3", p8: "2", p3: "0", comment: "" },
+  { name: "FC Kurant", p5: "1", p8: "1", p3: "1", comment: "" },
+  { name: "FC Odense", p5: "1", p8: "1", p3: "1", comment: "" },
+  { name: "Fjelsted Harndrup", p5: "2", p8: "1", p3: "1", comment: "" },
+  { name: "Fjordager IF", p5: "6", p8: "1", p3: "5", comment: "" },
+  { name: "Flemløse", p5: "2", p8: "1", p3: "2", comment: "Kan lave flere 3:3 baner. Tom" },
+  { name: "Fortuna Svendborg", p5: "1", p8: "1", p3: "1", comment: "" },
+  { name: "Fraugde", p5: "4", p8: "4", p3: "2", comment: "" },
+  { name: "Gelsted G & IF", p5: "4", p8: "1", p3: "1", comment: "" },
+  { name: "Glamsbjerg IF", p5: "2", p8: "2", p3: "1", comment: "" },
+  { name: "Haarby IF", p5: "3", p8: "1", p3: "4", comment: "" },
+  { name: "Hesselager", p5: "3", p8: "2", p3: "1", comment: "" },
   { name: "Holluf Pile-Tornbjerg IF", p5: "2", p8: "2", p3: "2", comment: "Kun 2 5M baner" },
-  { name: "Højby S & G", p5: "4", p8: "4", p3: "0", comment: "" },
-  { name: "Haarby IF", p5: "3", p8: "0", p3: "4", comment: "" },
-  { name: "Kauslunde", p5: "2", p8: "0", p3: "0", comment: "" },
+  { name: "Højby S & G", p5: "4", p8: "4", p3: "1", comment: "" },
+  { name: "Issø F16", p5: "1", p8: "1", p3: "1", comment: "" },
+  { name: "Kauslunde", p5: "2", p8: "1", p3: "1", comment: "" },
   { name: "Kerteminde BK", p5: "3", p8: "2", p3: "3", comment: "" },
-  { name: "KFUM", p5: "4", p8: "0", p3: "3", comment: "" },
+  { name: "KFUM", p5: "4", p8: "1", p3: "3", comment: "" },
   { name: "Kirkeby IF", p5: "2", p8: "2", p3: "4", comment: "" },
   { name: "Korup", p5: "3", p8: "2", p3: "4", comment: "" },
   { name: "KR70", p5: "2", p8: "2", p3: "3", comment: "" },
   { name: "Krarup Espe Fodbold", p5: "2", p8: "2", p3: "3", comment: "" },
-  { name: "KU BK", p5: "2 (4)", p8: "0", p3: "3", comment: "har 2 faste 5M baner - kan lave 4" },
-  { name: "Kværndrup", p5: "3", p8: "3 (4)", p3: "3", comment: "Allan" },
+  { name: "KU BK", p5: "2", p8: "1", p3: "3", comment: "har 2 faste 5M baner - kan lave 4" },
+  { name: "Kværndrup", p5: "3", p8: "3", p3: "3", comment: "Allan" },
   { name: "Langeskov IF", p5: "7", p8: "4", p3: "6", comment: "" },
-  { name: "Boldklubben Marienlyst", p5: "6 (8)", p8: "8", p3: "6 mindst", comment: "Lægger oven i hinanden" },
-  { name: "Marstal", p5: "3", p8: "3", p3: "0", comment: "" },
-  { name: "MG & BK", p5: "7", p8: "0", p3: "4", comment: "" },
-  { name: "Morud IF", p5: "3", p8: "0", p3: "0", comment: "" },
-  { name: "Munkebo BK", p5: "0", p8: "2", p3: "5", comment: "" },
-  { name: "Nr. Lyndelse / Søby F.C.", p5: "4", p8: "2", p3: "0", comment: "" },
-  { name: "Nr. Aaby", p5: "4", p8: "0", p3: "0", comment: "" },
+  { name: "Marstal", p5: "3", p8: "3", p3: "1", comment: "" },
+  { name: "MG & BK", p5: "7", p8: "1", p3: "4", comment: "" },
+  { name: "Morud IF", p5: "3", p8: "1", p3: "1", comment: "" },
+  { name: "Munkebo BK", p5: "1", p8: "2", p3: "5", comment: "" },
+  { name: "Nr. Aaby", p5: "4", p8: "1", p3: "1", comment: "" },
+  { name: "Nr. Lyndelse / Søby F.C.", p5: "4", p8: "2", p3: "1", comment: "" },
   { name: "Nyborg G & IF", p5: "4", p8: "4", p3: "4", comment: "" },
-  { name: "Næsby BK", p5: "9", p8: "0", p3: "4", comment: "" },
+  { name: "Næsby BK", p5: "9", p8: "1", p3: "4", comment: "" },
   { name: "OB", p5: "2", p8: "2", p3: "4", comment: "Søndag efter kl. 12" },
-  { name: "OKS", p5: "0", p8: "2", p3: "5", comment: "" },
-  { name: "Ringe BK", p5: "3", p8: "2 (evt. 4)", p3: "5", comment: "" },
-  { name: "Rudkøbing", p5: "4", p8: "0", p3: "0", comment: "" },
-  { name: "Ryslinge BK", p5: "3", p8: "4", p3: "0", comment: "" },
-  { name: "Sanderum BK", p5: "3", p8: "0", p3: "7", comment: "" },
-  { name: "SfB", p5: "4", p8: "0", p3: "4", comment: "" },
-  { name: "S.K.F.I.F.", p5: "0", p8: "0", p3: "3", comment: "" },
+  { name: "OKS", p5: "1", p8: "2", p3: "5", comment: "" },
+  { name: "Otterup", p5: "1", p8: "1", p3: "1", comment: "" },
+  { name: "Ringe BK", p5: "3", p8: "2", p3: "5", comment: "" },
+  { name: "Rudkøbing", p5: "4", p8: "1", p3: "1", comment: "" },
+  { name: "Ryslinge BK", p5: "3", p8: "4", p3: "1", comment: "" },
+  { name: "S.K.F.I.F.", p5: "1", p8: "1", p3: "3", comment: "" },
+  { name: "Sanderum BK", p5: "3", p8: "1", p3: "7", comment: "" },
+  { name: "SfB", p5: "4", p8: "1", p3: "4", comment: "" },
+  { name: "Skeby GF", p5: "1", p8: "1", p3: "1", comment: "" },
   { name: "Skårup", p5: "4", p8: "3", p3: "4", comment: "" },
   { name: "SSV Højfyn", p5: "5", p8: "4", p3: "5", comment: "" },
   { name: "Stige", p5: "2", p8: "2", p3: "3", comment: "" },
-  { name: "BK Stjernen af 1968", p5: "4", p8: "2", p3: "2", comment: "" },
   { name: "Strib IF", p5: "3", p8: "4", p3: "4", comment: "" },
-  { name: "SUB Ullerslev", p5: "6", p8: "0", p3: "0", comment: "" },
+  { name: "SUB Ullerslev", p5: "6", p8: "1", p3: "1", comment: "" },
   { name: "Særslev", p5: "2", p8: "2", p3: "3", comment: "" },
   { name: "Søhus stige", p5: "2", p8: "6", p3: "4", comment: "" },
-  { name: "Søndersø BK", p5: "3", p8: "2", p3: "0", comment: "" },
+  { name: "Søndersø BK", p5: "3", p8: "2", p3: "1", comment: "" },
   { name: "Thurø BK af 1920", p5: "4", p8: "3", p3: "4", comment: "" },
-  { name: "TIF Faaborg", p5: "2", p8: "0", p3: "0", comment: "" },
-  { name: "Tommerup", p5: "4", p8: "0", p3: "0", comment: "" },
+  { name: "TIF Faaborg", p5: "2", p8: "1", p3: "1", comment: "" },
+  { name: "Tommerup", p5: "4", p8: "1", p3: "1", comment: "" },
   { name: "TPI", p5: "6", p8: "6", p3: "10", comment: "Hjemmeholdene skal spille første og sidste kamp i stævnet" },
-  { name: "Tved BK", p5: "2", p8: "3", p3: "0", comment: "Vil gerne kører forskellige steder hen" },
+  { name: "Tved BK", p5: "2", p8: "3", p3: "1", comment: "Vil gerne kører forskellige steder hen" },
   { name: "Tåsinge f. B.", p5: "4", p8: "4", p3: "5", comment: "" },
   { name: "Ubberud", p5: "2", p8: "2", p3: "3", comment: "" },
-  { name: "Verninge", p5: "4", p8: "0", p3: "0", comment: "" },
+  { name: "Verninge", p5: "4", p8: "1", p3: "1", comment: "" },
   { name: "Vindinge", p5: "2", p8: "3", p3: "4", comment: "" },
   { name: "Ø.B.", p5: "2", p8: "2", p3: "2", comment: "" },
-  { name: "Aarslev BK", p5: "4", p8: "4", p3: "0", comment: "" },
-  { name: "Aarup", p5: "2", p8: "1", p3: "0", comment: "" },
-  { name: "FC Kurant", p5: "0", p8: "0", p3: "0", comment: "" },
-  { name: "FC Odense", p5: "0", p8: "0", p3: "0", comment: "" },
-  { name: "Fortuna Svendborg", p5: "0", p8: "0", p3: "0", comment: "" },
-  { name: "Issø F16", p5: "0", p8: "0", p3: "0", comment: "" },
-  { name: "Otterup", p5: "0", p8: "0", p3: "0", comment: "" },
-  { name: "Skeby GF", p5: "0", p8: "0", p3: "0", comment: "" }
+  { name: "Aarslev BK", p5: "4", p8: "4", p3: "1", comment: "" },
+  { name: "Aarup", p5: "2", p8: "1", p3: "1", comment: "" }
 ];
 
 // Klub-alias mapping: kendte variationer → kanonisk CLUBS_DATA-navn
 const CLUB_ALIASES = {
-  'tpi': 'TPI', 'tarup/paarup if': 'TPI', 'tarup/paarup': 'TPI', 'tarup paarup if': 'TPI', 'tarup paarup': 'TPI',
-  'mg&bk': 'MG & BK', 'mg & bk': 'MG & BK',
-  'kfum': 'KFUM', 'kfum.s bk': 'KFUM', 'kfums bk': 'KFUM',
-  'skfif': 'S.K.F.I.F.', 's.k.f.i.f.': 'S.K.F.I.F.', 's.k.f.i.f': 'S.K.F.I.F.',
-  'sfb': 'SfB', 'stige': 'Stige', 'stige bk': 'Stige', 'stige boldklub 2017': 'Stige',
-  'marienlyst': 'Boldklubben Marienlyst', 'boldklubben marienlyst': 'Boldklubben Marienlyst', 'bk marienlyst': 'Boldklubben Marienlyst',
-  'næsby': 'Næsby BK', 'næsby bk': 'Næsby BK', 'nåsby': 'Næsby BK', 'nåsby bk': 'Næsby BK',
-  'nyborg': 'Nyborg G & IF', 'nyborg gif': 'Nyborg G & IF', 'nyborg g & if': 'Nyborg G & IF', 'nyborg g&if': 'Nyborg G & IF',
-  'vindinge': 'Vindinge', 'vindinge bk': 'Vindinge',
-  'thurø': 'Thurø BK af 1920', 'thurø bk af 1920': 'Thurø BK af 1920', 'thuro bk af 1920': 'Thurø BK af 1920',
-  'tøsinge': 'Tåsinge f. B.', 'tåsinge': 'Tåsinge f. B.', 'tåsinge f. b.': 'Tåsinge f. B.', 'tøsinge f. b.': 'Tåsinge f. B.', 't øsinge': 'Tåsinge f. B.',
-  'dalum': 'Dalum IF', 'dalum if': 'Dalum IF',
-  'fjordager': 'Fjordager IF', 'fjordager if': 'Fjordager IF',
-  'strib': 'Strib IF', 'strib if': 'Strib IF',
-  'ob': 'OB', 'oks': 'OKS', 'bbb': 'BBB', 'eri': 'ERI',
-  'hpt': 'Holluf Pile-Tornbjerg IF', 'holluf pile-tornbjerg if': 'Holluf Pile-Tornbjerg IF', 'holluf pile': 'Holluf Pile-Tornbjerg IF',
-  'søhus': 'Søhus stige', 'søhus if': 'Søhus stige', 'søhus stige': 'Søhus stige',
-  'aarup': 'Aarup', 'aarup bk': 'Aarup',
-  'hesselager': 'Hesselager', 'hesselager fodbold': 'Hesselager',
-  'ryslinge': 'Ryslinge BK', 'ryslinge bk': 'Ryslinge BK',
-  'tommerup': 'Tommerup', 'tommerup bk': 'Tommerup', 'ssv tommerup': 'Tommerup',
-  'brylle': 'Brylle', 'brylle-verninge': 'Brylle',
-  'egebjerg': 'Egebjerg Fodbold', 'egebjerg fodbold': 'Egebjerg Fodbold',
-  'fraugde': 'Fraugde', 'korup': 'Korup',
-  'nr. aaby': 'Nr. Aaby', 'nr. aaby ik': 'Nr. Aaby',
-  'ø.b.': 'Ø.B.', 'øb': 'Ø.B.', 'åb': 'Ø.B.',
-  'sanderum': 'Sanderum BK', 'sanderum bk': 'Sanderum BK',
-  'kerteminde': 'Kerteminde BK', 'kerteminde bk': 'Kerteminde BK',
-  'assens': 'Assens', 'assens fc': 'Assens',
-  'skårup': 'Skårup', 'skårup if': 'Skårup',
-  'ringe': 'Ringe BK', 'ringe bk': 'Ringe BK',
-  'fc faaborg': 'FC Faaborg', 'fc broby': 'FC Broby',
-  'kurant': 'FC Kurant', 'fc kurant': 'FC Kurant',
+  'tpi': 'Tarup/Paarup IF',
+  'tarup/paarup if': 'Tarup/Paarup IF',
+  'tarup/paarup': 'Tarup/Paarup IF',
+  'tarup paarup if': 'Tarup/Paarup IF',
+  'tarup paarup': 'Tarup/Paarup IF',
+  'tarup-paarup': 'Tarup/Paarup IF',
+  'mg&bk': 'MG & BK',
+  'mg & bk': 'MG & BK',
+  'kfum': 'KFUM.s BK Odense',
+  'kfum.s bk': 'KFUM.s BK Odense',
+  'kfums bk': 'KFUM.s BK Odense',
+  'kfums': 'KFUM.s BK Odense',
+  'skfif': 'S.K.F.I.F.',
+  's.k.f.i.f.': 'S.K.F.I.F.',
+  's.k.f.i.f': 'S.K.F.I.F.',
+  'sfb': 'SfB',
+  'svendborg fb': 'SfB',
+  'svendborg': 'SfB',
+  'stige': 'Stige Boldklub 2017',
+  'stige bk': 'Stige Boldklub 2017',
+  'stige boldklub 2017': 'Stige Boldklub 2017',
+  'marienlyst': 'Boldklubben Marienlyst',
+  'boldklubben marienlyst': 'Boldklubben Marienlyst',
+  'bk marienlyst': 'Boldklubben Marienlyst',
+  'næsby': 'Næsby BK',
+  'næsby bk': 'Næsby BK',
+  'nåsby': 'Næsby BK',
+  'nåsby bk': 'Næsby BK',
+  'nyborg': 'Nyborg G & IF',
+  'nyborg gif': 'Nyborg G & IF',
+  'nyborg g & if': 'Nyborg G & IF',
+  'nyborg g&if': 'Nyborg G & IF',
+  'vindinge': 'Vindinge BK',
+  'vindinge bk': 'Vindinge BK',
+  'thurø': 'Thurø BK af 1920',
+  'thurø bk af 1920': 'Thurø BK af 1920',
+  'thuro bk af 1920': 'Thurø BK af 1920',
+  'tøsinge': 'Tåsinge f. B.',
+  'tåsinge': 'Tåsinge f. B.',
+  'tåsinge f. b.': 'Tåsinge f. B.',
+  'tøsinge f. b.': 'Tåsinge f. B.',
+  't øsinge': 'Tåsinge f. B.',
+  'dalum': 'Dalum IF',
+  'dalum if': 'Dalum IF',
+  'fjordager': 'Fjordager IF',
+  'fjordager if': 'Fjordager IF',
+  'strib': 'Strib IF',
+  'strib if': 'Strib IF',
+  'ob': 'Odense Boldklub',
+  'odense boldklub': 'Odense Boldklub',
+  'ob q': 'OB Q',
+  'odense q': 'OB Q',
+  'oks': 'OKS',
+  'bbb': 'BBB',
+  'eri': 'ERI',
+  'hpt': 'Holluf Pile-Tornbjerg IF',
+  'holluf pile-tornbjerg if': 'Holluf Pile-Tornbjerg IF',
+  'holluf pile': 'Holluf Pile-Tornbjerg IF',
+  'søhus': 'Søhus IF',
+  'søhus if': 'Søhus IF',
+  'søhus stige': 'Søhus IF',
+  'aarup': 'Aarup BK',
+  'aarup bk': 'Aarup BK',
+  'hesselager': 'Hesselager Fodbold',
+  'hesselager fodbold': 'Hesselager Fodbold',
+  'ryslinge': 'Ryslinge BK',
+  'ryslinge bk': 'Ryslinge BK',
+  'tommerup': 'Tommerup BK',
+  'tommerup bk': 'Tommerup BK',
+  'ssv tommerup': 'Tommerup BK',
+  'brylle': 'Brylle BK',
+  'brylle bk': 'Brylle BK',
+  'brylle-verninge': 'Brylle BK',
+  'egebjerg': 'Egebjerg Fodbold',
+  'egebjerg fodbold': 'Egebjerg Fodbold',
+  'fraugde': 'Fraugde G & IF',
+  'fraugde g & if': 'Fraugde G & IF',
+  'nr. aaby': 'Nr. Aaby IK',
+  'nr. aaby ik': 'Nr. Aaby IK',
+  'nr aaby': 'Nr. Aaby IK',
+  'ø.b.': 'ØB',
+  'øb': 'ØB',
+  'åb': 'ØB',
+  'sanderum': 'Sanderum BK',
+  'sanderum bk': 'Sanderum BK',
+  'kerteminde': 'Kerteminde BK',
+  'kerteminde bk': 'Kerteminde BK',
+  'assens': 'Assens FC',
+  'assens fc': 'Assens FC',
+  'skårup': 'Skårup IF',
+  'skårup if': 'Skårup IF',
+  'ringe': 'Ringe BK',
+  'ringe bk': 'Ringe BK',
+  'fc faaborg': 'FC Faaborg',
+  'faaborg': 'FC Faaborg',
+  'fc broby': 'FC Broby',
+  'kurant': 'FC Kurant',
+  'fc kurant': 'FC Kurant',
   'fc odense': 'FC Odense',
-  'ku bk': 'KU BK', 'kubk': 'KU BK',
-  'langeskov': 'Langeskov IF', 'langeskov if': 'Langeskov IF',
-  'kværndrup': 'Kværndrup', 'kværndrup bk': 'Kværndrup',
-  'morud': 'Morud IF', 'morud if': 'Morud IF',
-  'munkebo': 'Munkebo BK', 'munkebo bk': 'Munkebo BK',
+  'ku bk': 'KU BK',
+  'kubk': 'KU BK',
+  'langeskov': 'Langeskov IF',
+  'langeskov if': 'Langeskov IF',
+  'kværndrup': 'Kværndrup BK',
+  'kværndrup bk': 'Kværndrup BK',
+  'morud': 'Morud IF',
+  'morud if': 'Morud IF',
+  'munkebo': 'Munkebo BK',
+  'munkebo bk': 'Munkebo BK',
   'sub ullerslev': 'SUB Ullerslev',
-  'bogense': 'Bogense G & IF', 'bogense g & if': 'Bogense G & IF',
-  'b 1909': 'B 1909', 'b1913': 'B1913',
-  'højby': 'Højby S & G', 'højby s & g': 'Højby S & G',
-  'gelsted': 'Gelsted G & IF', 'gelsted g & if': 'Gelsted G & IF',
-  'haarby': 'Haarby IF', 'haarby if': 'Haarby IF',
-  'bk stjernen af 1968': 'BK Stjernen af 1968', 'bk stjernen': 'BK Stjernen af 1968', 'stjernen': 'BK Stjernen af 1968',
-  'søndersø': 'Søndersø BK', 'søndersø bk': 'Søndersø BK', 'sønders bk': 'Søndersø BK', 'ssbk': 'Søndersø BK',
-  'ssv højfyn': 'SSV Højfyn',
-  'aarslev': 'Aarslev BK', 'aarslev bk': 'Aarslev BK',
-  'nr. lyndelse / søby f.c.': 'Nr. Lyndelse / Søby F.C.', 'nr. lyndelse': 'Nr. Lyndelse / Søby F.C.',
+  'bogense': 'Bogense G & IF',
+  'bogense g & if': 'Bogense G & IF',
+  'b 1909': 'B 1909',
+  'b1909': 'B 1909',
+  'b1913': 'B1913',
+  'højby': 'Højby S & G',
+  'højby s & g': 'Højby S & G',
+  'gelsted': 'Gelsted G & IF',
+  'gelsted g & if': 'Gelsted G & IF',
+  'haarby': 'Haarby IF',
+  'haarby if': 'Haarby IF',
+  'bk stjernen af 1968': 'BK Stjernen af 1968',
+  'bk stjernen': 'BK Stjernen af 1968',
+  'stjernen': 'BK Stjernen af 1968',
+  'søndersø': 'Søndersø BK',
+  'søndersø bk': 'Søndersø BK',
+  'sønders bk': 'Søndersø BK',
+  'ssv højfyn': 'Vissenbjerg G & IF',
+  'vissenbjerg': 'Vissenbjerg G & IF',
+  'aarslev': 'Aarslev BK',
+  'aarslev bk': 'Aarslev BK',
+  'nr. lyndelse / søby f.c.': 'Nr. Lyndelse / Søby F.C.',
+  'nr. lyndelse': 'Nr. Lyndelse / Søby F.C.',
   'fortuna svendborg': 'Fortuna Svendborg',
-  'krarup espe': 'Krarup Espe Fodbold', 'krarup espe fodbold': 'Krarup Espe Fodbold',
-  'brenderup': 'Brenderup IF', 'brenderup if': 'Brenderup IF',
-  'tved': 'Tved BK', 'tved bk': 'Tved BK',
-  'skeby': 'Skeby GF', 'skeby gf': 'Skeby GF',
-  'otterup': 'Otterup', 'otterup bold- og idratsklub': 'Otterup',
-  'issø f16': 'Issø F16', 'issø': 'Issø F16',
+  'fortuna': 'Fortuna Svendborg',
+  'krarup espe': 'Krarup Espe Fodbold',
+  'krarup espe fodbold': 'Krarup Espe Fodbold',
+  'brenderup': 'Brenderup IF',
+  'brenderup if': 'Brenderup IF',
+  'tved': 'Tved BK',
+  'tved bk': 'Tved BK',
+  'skeby': 'Skeby GF',
+  'skeby gf': 'Skeby GF',
+  'otterup': 'Otterup Bold- og Idrætsklub',
+  'otterup bk': 'Otterup Bold- og Idrætsklub',
+  'otterup bold- og idratsklub': 'Otterup Bold- og Idrætsklub',
+  'issø f16': 'Issø F16',
+  'issø': 'Issø F16',
+  'hjallese': 'FC Hjallese',
+  'fc hjallese': 'FC Hjallese',
+  'bolbro': 'Bolbro GIF',
+  'bolbro gif': 'Bolbro GIF',
+  'bolbro if': 'Bolbro GIF',
+  'agedrup': 'Agedrup-Bullerup Boldklub',
+  'bullerup': 'Agedrup-Bullerup Boldklub',
+  'agedrup-bullerup': 'Agedrup-Bullerup Boldklub',
+  'allesø': 'Allesø GF',
+  'allesø gf': 'Allesø GF',
+  'allested': 'Allested U & IF',
+  'allested u & if': 'Allested U & IF',
+  'birkende': 'Birkende BK',
+  'birkende bk': 'Birkende BK',
+  'dsio': 'DSIO',
+  'røde stjerne': 'Røde Stjerne',
+  'aasum': 'Aasum IF',
+  'aasum if': 'Aasum IF',
+  'nr. søby': 'Nr. Søby BK',
+  'nr. søby bk': 'Nr. Søby BK',
+  'bk2020': 'BK2020',
+  'b chang': 'B Chang',
+  'fc avrasya': 'FC Avrasya',
+  'fc bih odense': 'FC BiH Odense',
+  'fc bih': 'FC BiH Odense',
+  'fc zagros odense': 'FC Zagros Odense',
+  'fc zagros': 'FC Zagros Odense',
+  'fiuk odense': 'FIUK, Odense',
+  'fiuk': 'FIUK, Odense',
+  'fk utopia': 'FK Utopia',
+  'flemløse': 'Flemløse BK',
+  'flemløse bk': 'Flemløse BK',
+  'get2sport': 'Get2Sport',
+  'hospitalets fk': 'Hospitalets FK',
+  'hospitalets': 'Hospitalets FK',
+  'kerte': 'Kerte GF',
+  'kerte gf': 'Kerte GF',
+  'kildemosen': 'Kildemosens BK',
+  'kildemosens bk': 'Kildemosens BK',
+  'kildemosens': 'Kildemosens BK',
+  'klinte grindløse': 'Klinte Grindløse IF',
+  'klinte grindløse if': 'Klinte Grindløse IF',
+  'ommel': 'Ommel BK',
+  'ommel bk': 'Ommel BK',
+  'ore': 'Ore Sogns GF',
+  'ore sogns gf': 'Ore Sogns GF',
+  'pdif': 'PDIF',
+  'rise': 'Rise S & IF',
+  'rise s & if': 'Rise S & IF',
+  'søllinge': 'Søllinge Sport og Fritid',
+  'søllinge sport': 'Søllinge Sport og Fritid',
+  'if 09': 'IF 09',
+  'b 67': 'B 67',
+  'dbu fyn': 'DBU Fyn',
+  'fc lange bolde': 'F.C. Lange Bolde',
+  'f.c. lange bolde': 'F.C. Lange Bolde',
+  'boldklubben enghaven': 'Boldklubben Enghaven',
+  'bk enghaven': 'Boldklubben Enghaven',
+  'haarby efterskole': 'Haarby Efterskole',
+  'ucl': 'University College Lillebælt Football Club',
+  'ucl football': 'University College Lillebælt Football Club',
 };
+
+// Explicit mapping fra stævne-klubnavne til kørselstidsmatrix-klubnavne
+// Bruges FØR fuzzy-matching for at undgå fejlmatch (f.eks. "OB" → "OB Q" i stedet for "Odense Boldklub")
+const DEFAULT_DRIVE_CLUB_MAP = {
+  'OB': 'Odense Boldklub',
+  'Næsby': 'Næsby BK',
+  'Dalum': 'Dalum IF',
+  'B1909': 'B 1909',
+  'B1913': 'B1913',
+  'Bolbro': 'Bolbro GIF',
+  'Hjallese': 'FC Hjallese',
+  'Langeskov': 'Langeskov IF',
+  'Otterup': 'Otterup Bold- og Idrætsklub',
+  'Kerteminde': 'Kerteminde BK',
+  'Munkebo': 'Munkebo BK',
+  'Nyborg': 'Nyborg G & IF',
+  'Ringe': 'Ringe BK',
+  'Svendborg': 'SfB',
+  'Odense Q': 'OB Q',
+  'OB Q': 'OB Q',
+  'TPI': 'Tarup/Paarup IF',
+  'Tarup-Paarup': 'Tarup/Paarup IF',
+  'MG & BK': 'MG & BK',
+  'Marienlyst': 'Boldklubben Marienlyst',
+  'SSBK': 'Stige Boldklub 2017',
+  'SSV Højfyn': 'Vissenbjerg G & IF',
+};
+
+// Module-level mutable variabel — synkroniseres fra React state via useEffect
+let driveClubMapOverrides = {};
 
 const normalizeClubName = (name) => {
   if (!name) return name;
@@ -792,6 +1014,59 @@ const matchClubName = (name1, name2) => {
   const n1 = normalizeClubName(name1).toLowerCase();
   const n2 = normalizeClubName(name2).toLowerCase();
   return n1 === n2 || n1.includes(n2) || n2.includes(n1);
+};
+
+// Lookup kørselstid/afstand mellem to klubber via fuzzy matching
+const findDriveClub = (clubName) => {
+  if (!clubName) return null;
+  const trimmed = clubName.trim();
+  // 0. Check explicit map FIRST (user overrides har højeste prioritet, derefter defaults)
+  const mapResult = driveClubMapOverrides[trimmed] || driveClubMapOverrides[normalizeClubName(trimmed)]
+    || DEFAULT_DRIVE_CLUB_MAP[trimmed] || DEFAULT_DRIVE_CLUB_MAP[normalizeClubName(trimmed)];
+  if (mapResult && DRIVE_TIME_CLUBS.includes(mapResult)) return mapResult;
+
+  const norm = normalizeClubName(clubName).toLowerCase().trim();
+  if (!norm) return null;
+  // 1. Exact normalized match
+  const exact = DRIVE_TIME_CLUBS.find(c => normalizeClubName(c).toLowerCase() === norm);
+  if (exact) return exact;
+  // 2. Exact case-insensitive match on raw name
+  const rawExact = DRIVE_TIME_CLUBS.find(c => c.toLowerCase() === clubName.toLowerCase().trim());
+  if (rawExact) return rawExact;
+  // 3. Starts-with match (e.g. "OB" matches "OB Q", "Næsby" matches "Næsby BK")
+  const startsWith = DRIVE_TIME_CLUBS.find(c => c.toLowerCase().startsWith(norm) || normalizeClubName(c).toLowerCase().startsWith(norm));
+  if (startsWith) return startsWith;
+  // 4. Word-boundary match (club name starts with search term as a word)
+  const wordMatch = DRIVE_TIME_CLUBS.find(c => {
+    const words = c.toLowerCase().split(/[\s/]+/);
+    return words.some(w => w.startsWith(norm) || norm.startsWith(w));
+  });
+  if (wordMatch) return wordMatch;
+  // 5. Contains match as last resort (only if search is 3+ chars to avoid false positives)
+  if (norm.length >= 3) {
+    return DRIVE_TIME_CLUBS.find(c => normalizeClubName(c).toLowerCase().includes(norm) || norm.includes(normalizeClubName(c).toLowerCase())) || null;
+  }
+  return null;
+};
+
+const getDriveTime = (fromClub, toClub) => {
+  const from = findDriveClub(fromClub);
+  const to = findDriveClub(toClub);
+  if (!from || !to || from === to) return null;
+  return DRIVE_TIME_MATRIX[from]?.[to] ?? null;
+};
+
+const getDriveDistance = (fromClub, toClub) => {
+  const from = findDriveClub(fromClub);
+  const to = findDriveClub(toClub);
+  if (!from || !to || from === to) return null;
+  return DISTANCE_MATRIX[from]?.[to] ?? null;
+};
+
+// Returnerer kørselstid i minutter fra et hold til en vært. Returnerer Infinity hvis ukendt.
+const getDriveTimeToHost = (teamClub, hostClub) => {
+  const time = getDriveTime(teamClub, hostClub);
+  return time != null ? time : Infinity;
 };
 
 const parseNumber = (val) => {
@@ -814,245 +1089,6 @@ const getBaneCountFromTemplate = (templateName) => {
   return match ? parseInt(match[1]) : 1;
 };
 
-// --- GEOGRAFISK DATABASE (Fynske klubber) ---
-const fynPostalCoords = {
-  '5000': { lat: 55.4038, lng: 10.4024 },
-  '5200': { lat: 55.3959, lng: 10.3883 },
-  '5210': { lat: 55.4106, lng: 10.3560 },
-  '5220': { lat: 55.3870, lng: 10.4230 },
-  '5230': { lat: 55.3920, lng: 10.3750 },
-  '5240': { lat: 55.4168, lng: 10.4310 },
-  '5250': { lat: 55.3830, lng: 10.3530 },
-  '5260': { lat: 55.3700, lng: 10.3900 },
-  '5270': { lat: 55.4250, lng: 10.3880 },
-  '5290': { lat: 55.3970, lng: 10.5200 },
-  '5300': { lat: 55.4490, lng: 10.6570 },
-  '5320': { lat: 55.4130, lng: 10.4850 },
-  '5330': { lat: 55.4530, lng: 10.5630 },
-  '5350': { lat: 55.4400, lng: 10.5400 },
-  '5370': { lat: 55.4800, lng: 10.6250 },
-  '5380': { lat: 55.4000, lng: 10.5700 },
-  '5390': { lat: 55.4700, lng: 10.7000 },
-  '5400': { lat: 55.5660, lng: 10.0880 },
-  '5450': { lat: 55.5140, lng: 10.2920 },
-  '5462': { lat: 55.4900, lng: 10.2100 },
-  '5463': { lat: 55.4600, lng: 9.9900 },
-  '5464': { lat: 55.4800, lng: 9.9800 },
-  '5466': { lat: 55.4700, lng: 10.0200 },
-  '5471': { lat: 55.4830, lng: 10.2450 },
-  '5474': { lat: 55.4750, lng: 10.1800 },
-  '5485': { lat: 55.5100, lng: 10.1600 },
-  '5491': { lat: 55.3950, lng: 10.2800 },
-  '5492': { lat: 55.3800, lng: 10.2200 },
-  '5500': { lat: 55.5054, lng: 9.7305 },
-  '5540': { lat: 55.3500, lng: 10.6100 },
-  '5550': { lat: 55.3600, lng: 10.5700 },
-  '5560': { lat: 55.3920, lng: 10.0650 },
-  '5580': { lat: 55.4500, lng: 9.8500 },
-  '5591': { lat: 55.4350, lng: 9.9200 },
-  '5592': { lat: 55.4200, lng: 9.9600 },
-  '5600': { lat: 55.0960, lng: 10.2410 },
-  '5610': { lat: 55.2710, lng: 9.8800 },
-  '5620': { lat: 55.2850, lng: 10.0800 },
-  '5631': { lat: 55.2300, lng: 9.9500 },
-  '5642': { lat: 55.1400, lng: 10.1700 },
-  '5672': { lat: 55.2250, lng: 10.2550 },
-  '5683': { lat: 55.2200, lng: 10.0500 },
-  '5690': { lat: 55.3200, lng: 10.2100 },
-  '5700': { lat: 55.0597, lng: 10.6066 },
-  '5750': { lat: 55.2300, lng: 10.4700 },
-  '5762': { lat: 55.1200, lng: 10.4000 },
-  '5771': { lat: 55.1600, lng: 10.4800 },
-  '5772': { lat: 55.2100, lng: 10.5400 },
-  '5792': { lat: 55.3120, lng: 10.4400 },
-  '5800': { lat: 55.3125, lng: 10.7902 },
-  '5853': { lat: 55.2700, lng: 10.6700 },
-  '5854': { lat: 55.2500, lng: 10.5800 },
-  '5856': { lat: 55.2400, lng: 10.5200 },
-  '5863': { lat: 55.3000, lng: 10.5600 },
-  '5871': { lat: 55.2300, lng: 10.7500 },
-  '5874': { lat: 55.2000, lng: 10.7300 },
-  '5881': { lat: 55.1000, lng: 10.5700 },
-  '5882': { lat: 55.1200, lng: 10.6500 },
-  '5883': { lat: 55.1100, lng: 10.7000 },
-  '5884': { lat: 55.1500, lng: 10.7200 },
-  '5892': { lat: 55.1900, lng: 10.6000 },
-  '5900': { lat: 54.9393, lng: 10.7110 },
-  '5932': { lat: 54.8600, lng: 10.7000 },
-  '5935': { lat: 54.7500, lng: 10.6700 },
-  '5953': { lat: 55.0000, lng: 10.8300 },
-  '5960': { lat: 54.8550, lng: 10.5170 },
-  '5970': { lat: 54.8900, lng: 10.4100 },
-};
-
-const clubGeoDatabase = {
-  "Agedrup-Bullerup Boldklub": "5320",
-  "Allested U & IF": "5672",
-  "Allesø GF": "5270",
-  "Assens FC": "5610",
-  "Aunslev IF": "5800",
-  "B 1909": "5240",
-  "B 67": "5220",
-  "B Chang": "5000",
-  "B1913": "5230",
-  "BBB": "5250",
-  "Birkende BK": "5550",
-  "BK Posten": "5000",
-  "BK Stjernen af 1968": "5700",
-  "BK Vestfyn": "5610",
-  "BK2020": "5200",
-  "Bogense G & IF": "5400",
-  "Bolbro GIF": "5000",
-  "Boldklubben Enghaven": "5250",
-  "Boldklubben Marienlyst": "5000",
-  "Brenderup IF": "5464",
-  "Brylle BK": "5690",
-  "Båring GF": "5466",
-  "Dalby IF": "5380",
-  "Dalum IF": "5250",
-  "DBU Fyn": "5200",
-  "Drigstrup BK": "5300",
-  "DSIO": "5200",
-  "Ebberup IF": "5631",
-  "Egebjerg Fodbold": "5762",
-  "Ejby IK": "5592",
-  "ERI": "5700",
-  "F.C. Lange Bolde": "5210",
-  "Faldsled/Svanninge SG & IF": "5642",
-  "FC Avrasya": "5000",
-  "FC BiH Odense": "5220",
-  "FC Broby": "5672",
-  "FC Campus": "5230",
-  "FC Faaborg": "5600",
-  "FC Hjallese": "5000",
-  "FC Kurant": "5700",
-  "FC Odense": "5250",
-  "FC Sydfyn": "5700",
-  "FC Zagros Odense": "5220",
-  "FIUK, Odense": "5240",
-  "Fjelsted/Harndrup IF": "5463",
-  "Fjordager IF": "5240",
-  "FK Utopia": "5000",
-  "Flemløse BK": "5620",
-  "Fortuna Svendborg": "5700",
-  "Fraugde G & IF": "5220",
-  "Gelsted G & IF": "5591",
-  "Get2Sport": "5240",
-  "Gislev IF": "5854",
-  "Glamsbjerg IF": "5620",
-  "HERIF": "5853",
-  "Herrested-Ørbæk Boldklub": "5853",
-  "Hesselager Fodbold": "5874",
-  "Holluf Pile-Tornbjerg IF": "5220",
-  "Horne f. Sp.": "5600",
-  "Hospitalets FK": "5500",
-  "Humble BK": "5932",
-  "Højby S & G": "5260",
-  "Haarby Efterskole": "5683",
-  "Haarby IF": "5683",
-  "Hårslev BK": "5471",
-  "IF 09": "5240",
-  "Issø F16": "5771",
-  "Kauslunde IF": "5500",
-  "Kerte GF": "5560",
-  "Kerteminde BK": "5300",
-  "KFUM.s BK Odense": "5200",
-  "Kildemosens BK": "5000",
-  "Kirkeby IF": "5771",
-  "Klinte Grindløse IF": "5400",
-  "Korinth IF": "5600",
-  "KR 70": "5300",
-  "Krarup Espe Fodbold": "5750",
-  "KRFK": "5450",
-  "KU BK": "5210",
-  "Kværndrup BK": "5772",
-  "Langeskov IF": "5550",
-  "Langtved SG & IF": "5540",
-  "Longelse Sp.": "5900",
-  "Lumby IF 88": "5270",
-  "Marslev G & IF": "5290",
-  "Marstal IF": "5960",
-  "MG & BK": "5500",
-  "Morud IF": "5462",
-  "Munkebo BK": "5330",
-  "Nr. Lyndelse / Søby F.C.": "5792",
-  "Nr. Søby BK": "5792",
-  "Nr. Aaby IK": "5580",
-  "Nyborg G & IF": "5800",
-  "Næsby BK": "5270",
-  "OB Q": "5000",
-  "Odense Boldklub": "5000",
-  "OKS": "5000",
-  "Ommel BK": "5960",
-  "Ore Sogns GF": "5400",
-  "Otterup Bold- og Idrætsklub": "5450",
-  "Oure Fodbold Akademi": "5883",
-  "PDIF": "5240",
-  "Ringe BK": "5750",
-  "Rise S & IF": "5970",
-  "Rolfsted IF": "5863",
-  "Rudkøbing BK": "5900",
-  "Ryslinge BK": "5856",
-  "Røde Stjerne": "5000",
-  "S.K.F.I.F.": "5260",
-  "Sanderum BK": "5250",
-  "SfB": "5700",
-  "Skalbjerg BK": "5492",
-  "Skallebølle Sportsklub": "5492",
-  "Skamby BK": "5485",
-  "Skeby GF": "5450",
-  "Skovby GF": "5400",
-  "Skårup IF": "5881",
-  "Stenstrup IF": "5771",
-  "Stige Boldklub 2017": "5270",
-  "Strib IF": "5500",
-  "SUB Ullerslev": "5540",
-  "Særslev BK": "5471",
-  "Søhus IF": "5270",
-  "Søllinge Sport og Fritid": "5750",
-  "Søndersø BK": "5471",
-  "Tarup/Paarup IF": "5210",
-  "Thurø BK af 1920": "5700",
-  "Tommerup BK": "5690",
-  "Tranekær/Tullebølle IF": "5900",
-  "Tved BK": "5700",
-  "Tårup IF": "5871",
-  "Tåsinge f. B.": "5700",
-  "Ubberud IF": "5491",
-  "University College Lillebælt Football Club": "5260",
-  "Veflinge G & IF": "5474",
-  "Verninge IF": "5690",
-  "Vindinge BK": "5800",
-  "Vissenbjerg G & IF": "5492",
-  "ØB": "5000",
-  "Aarslev BK": "5792",
-  "Aarup BK": "5560",
-  "Aasum IF": "5240",
-};
-
-const getClubCoordinates = (clubName) => {
-  if (!clubName) return null;
-  const postal = clubGeoDatabase[clubName];
-  if (postal && fynPostalCoords[postal]) return fynPostalCoords[postal];
-  const lcName = clubName.toLowerCase();
-  for (const [knownClub, knownPostal] of Object.entries(clubGeoDatabase)) {
-    const lcKnown = knownClub.toLowerCase();
-    if (lcName === lcKnown || lcName.includes(lcKnown) || lcKnown.includes(lcName)) {
-      if (fynPostalCoords[knownPostal]) return fynPostalCoords[knownPostal];
-    }
-  }
-  return null;
-};
-
-const haversineDistance = (c1, c2) => {
-  const R = 6371;
-  const dLat = (c2.lat - c1.lat) * Math.PI / 180;
-  const dLng = (c2.lng - c1.lng) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2 +
-    Math.cos(c1.lat * Math.PI / 180) * Math.cos(c2.lat * Math.PI / 180) *
-    Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-};
 
 const BanerView = ({ clubs, setClubs }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -1135,11 +1171,11 @@ const BanerView = ({ clubs, setClubs }) => {
 
   const getSortIcon = (columnName) => {
     if (sortConfig.key !== columnName) {
-      return <ArrowUpDown size={14} className="text-green-300 opacity-0 group-hover:opacity-100 transition-opacity ml-1 shrink-0" />;
+      return <ArrowUpDown size={14} className="text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity ml-1 shrink-0" />;
     }
     return sortConfig.direction === 'asc' 
-      ? <ChevronUp size={14} className="text-green-700 ml-1 shrink-0" />
-      : <ChevronDown size={14} className="text-green-700 ml-1 shrink-0" />;
+      ? <ChevronUp size={14} className="text-[#c90b0e] ml-1 shrink-0" />
+      : <ChevronDown size={14} className="text-[#c90b0e] ml-1 shrink-0" />;
   };
 
   const clearFilters = () => {
@@ -1160,7 +1196,7 @@ const BanerView = ({ clubs, setClubs }) => {
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-xl shadow-sm border border-gray-200 gap-4">
           <div className="flex items-center gap-3">
-            <MapIcon size={32} className="text-green-600" />
+            <MapIcon size={32} className="text-[#c90b0e]" />
             <div>
               <h2 className="text-2xl font-bold text-gray-800">Banekapacitet</h2>
               <p className="text-gray-500 mt-1 text-sm">Oversigt over klubbernes baner for stævneplanlægning.</p>
@@ -1170,12 +1206,12 @@ const BanerView = ({ clubs, setClubs }) => {
             <Tip text="Tilføj en ny klub til stævneplanen" position="bottom">
             <button
               onClick={handleAddClick}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-colors shadow-sm"
+              className="bg-[#c90b0e] hover:bg-[#9c0f06] text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-colors shadow-sm"
             >
               <Plus size={18} /> Tilføj klub
             </button>
             </Tip>
-            <div className="bg-green-50 text-green-800 border border-green-200 px-4 py-2 rounded-lg font-bold text-sm hidden sm:block">
+            <div className="bg-red-50 text-[#c90b0e] border border-red-200 px-4 py-2 rounded-lg font-bold text-sm hidden sm:block">
               {filteredClubs.length} {filteredClubs.length === 1 ? 'klub' : 'klubber'} fundet
             </div>
           </div>
@@ -1185,7 +1221,7 @@ const BanerView = ({ clubs, setClubs }) => {
         <div className="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold flex items-center gap-2 text-gray-800">
-              <Filter size={20} className="text-green-600"/> Filtrér klubber
+              <Filter size={20} className="text-[#c90b0e]"/> Filtrér klubber
             </h2>
             {activeFiltersCount > 0 && (
               <button onClick={clearFilters} className="text-sm font-bold text-gray-500 hover:text-red-600 flex items-center gap-1 transition-colors px-3 py-1.5 bg-gray-100 hover:bg-red-50 rounded-lg">
@@ -1203,7 +1239,7 @@ const BanerView = ({ clubs, setClubs }) => {
                 <input 
                   type="text" 
                   placeholder="f.eks. Næsby..." 
-                  className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm font-medium"
+                  className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c90b0e] outline-none transition-all text-sm font-medium"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -1214,12 +1250,12 @@ const BanerView = ({ clubs, setClubs }) => {
             <div>
               <div className="flex justify-between text-xs font-bold mb-1.5">
                 <span className="text-gray-500 uppercase">Min. 3:3 baner</span>
-                <span className="text-green-700">{min3}+</span>
+                <span className="text-[#c90b0e]">{min3}+</span>
               </div>
               <input 
                 type="range" min="0" max="10" 
                 value={min3} onChange={(e) => setMin3(Number(e.target.value))}
-                className="w-full accent-green-600"
+                className="w-full accent-[#c90b0e]"
               />
             </div>
 
@@ -1227,12 +1263,12 @@ const BanerView = ({ clubs, setClubs }) => {
             <div>
               <div className="flex justify-between text-xs font-bold mb-1.5">
                 <span className="text-gray-500 uppercase">Min. 5:5 baner</span>
-                <span className="text-green-700">{min5}+</span>
+                <span className="text-[#c90b0e]">{min5}+</span>
               </div>
               <input 
                 type="range" min="0" max="10" 
                 value={min5} onChange={(e) => setMin5(Number(e.target.value))}
-                className="w-full accent-green-600"
+                className="w-full accent-[#c90b0e]"
               />
             </div>
 
@@ -1240,12 +1276,12 @@ const BanerView = ({ clubs, setClubs }) => {
             <div>
               <div className="flex justify-between text-xs font-bold mb-1.5">
                 <span className="text-gray-500 uppercase">Min. 8:8 baner</span>
-                <span className="text-green-700">{min8}+</span>
+                <span className="text-[#c90b0e]">{min8}+</span>
               </div>
               <input 
                 type="range" min="0" max="10" 
                 value={min8} onChange={(e) => setMin8(Number(e.target.value))}
-                className="w-full accent-green-600"
+                className="w-full accent-[#c90b0e]"
               />
             </div>
 
@@ -1254,7 +1290,7 @@ const BanerView = ({ clubs, setClubs }) => {
               <label className="flex items-center gap-2 cursor-pointer group">
                 <input 
                   type="checkbox" 
-                  className="w-5 h-5 accent-green-600 rounded cursor-pointer"
+                  className="w-5 h-5 accent-[#c90b0e] rounded cursor-pointer"
                   checked={onlyWithComments}
                   onChange={(e) => setOnlyWithComments(e.target.checked)}
                 />
@@ -1277,7 +1313,7 @@ const BanerView = ({ clubs, setClubs }) => {
               <p className="text-gray-500 mb-6">Prøv at justere dine filtre eller din søgning for at finde det du leder efter.</p>
               <button 
                 onClick={clearFilters}
-                className="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg font-bold transition-colors"
+                className="bg-[#c90b0e] hover:bg-[#9c0f06] text-white px-5 py-2.5 rounded-lg font-bold transition-colors"
               >
                 Ryd alle filtre
               </button>
@@ -1375,7 +1411,7 @@ const BanerView = ({ clubs, setClubs }) => {
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center p-5 border-b border-gray-100 bg-gray-50">
               <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                {formData.id ? <Edit2 size={20} className="text-green-600" /> : <Plus size={20} className="text-green-600" />}
+                {formData.id ? <Edit2 size={20} className="text-[#c90b0e]" /> : <Plus size={20} className="text-[#c90b0e]" />}
                 {formData.id ? 'Rediger klub' : 'Tilføj ny klub'}
               </h3>
               <button 
@@ -1392,7 +1428,7 @@ const BanerView = ({ clubs, setClubs }) => {
                   <label className="block text-xs font-bold text-gray-600 mb-1">Klubnavn</label>
                   <input 
                     type="text" required
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c90b0e] outline-none transition-all text-sm"
                     value={formData.name}
                     onChange={e => setFormData({...formData, name: e.target.value})}
                     placeholder="f.eks. FC Odense"
@@ -1404,7 +1440,7 @@ const BanerView = ({ clubs, setClubs }) => {
                     <label className="block text-xs font-bold text-gray-600 mb-1">3:3 baner</label>
                     <input 
                       type="text" 
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm"
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c90b0e] outline-none transition-all text-sm"
                       value={formData.p3}
                       onChange={e => setFormData({...formData, p3: e.target.value})}
                       placeholder="f.eks. 2"
@@ -1414,7 +1450,7 @@ const BanerView = ({ clubs, setClubs }) => {
                     <label className="block text-xs font-bold text-gray-600 mb-1">5:5 baner</label>
                     <input 
                       type="text" 
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm"
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c90b0e] outline-none transition-all text-sm"
                       value={formData.p5}
                       onChange={e => setFormData({...formData, p5: e.target.value})}
                       placeholder="f.eks. 4"
@@ -1424,7 +1460,7 @@ const BanerView = ({ clubs, setClubs }) => {
                     <label className="block text-xs font-bold text-gray-600 mb-1">8:8 baner</label>
                     <input 
                       type="text" 
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm"
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c90b0e] outline-none transition-all text-sm"
                       value={formData.p8}
                       onChange={e => setFormData({...formData, p8: e.target.value})}
                       placeholder="f.eks. 1(2)"
@@ -1435,7 +1471,7 @@ const BanerView = ({ clubs, setClubs }) => {
                 <div>
                   <label className="block text-xs font-bold text-gray-600 mb-1">Kommentarer</label>
                   <textarea 
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all resize-none h-24 text-sm"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c90b0e] outline-none transition-all resize-none h-24 text-sm"
                     value={formData.comment}
                     onChange={e => setFormData({...formData, comment: e.target.value})}
                     placeholder="Evt. særlige forhold..."
@@ -1453,7 +1489,7 @@ const BanerView = ({ clubs, setClubs }) => {
                 </button>
                 <button 
                   type="submit"
-                  className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold transition-colors shadow-sm text-sm"
+                  className="flex-1 px-4 py-2.5 bg-[#c90b0e] hover:bg-[#9c0f06] text-white rounded-lg font-bold transition-colors shadow-sm text-sm"
                 >
                   Gem ændringer
                 </button>
@@ -1547,6 +1583,57 @@ const fixPoolKeys = (poolTeams, useHostMatchLogic, templateKey, customHostKeys =
     const hIdx = newTeams.findIndex(t => t.id === host.id);
     newTeams[hIdx] = { ...newTeams[hIdx], fodaKey: hostKey };
     availableKeys = availableKeys.filter(k => k !== hostKey);
+
+    // SMART: Tildel nøgler til hold fra samme klub som værten (så de ikke møder hinanden)
+    if (templateKey) {
+      const hostClub = newTeams[hIdx].club;
+      const sameClubTeams = newTeams.filter(t =>
+        t.id !== host.id && !t.isBye && matchClubName(t.club, hostClub) &&
+        !(t.isPinned && t.fodaKey != null && t.fodaKey >= 1 && t.fodaKey <= size)
+      );
+
+      if (sameClubTeams.length > 0) {
+        const tData = fodaMatrices[templateKey] || fodaMatrices3v3[templateKey];
+        if (tData) {
+          const matrix = tData.matrix;
+          const hostKeyIdx = hostKey - 1;
+
+          // Find ledige nøgler der IKKE spiller mod host-nøglen
+          const nonIntersecting = availableKeys.filter(k => matrix[hostKeyIdx][k - 1] === 0);
+
+          if (nonIntersecting.length > 0) {
+            const schedule = predefinedSchedules[templateKey];
+            const matchCounts = matrix.map(row => row.reduce((s, v) => s + v, 0));
+            const hostMatchCount = matchCounts[hostKeyIdx];
+
+            nonIntersecting.sort((a, b) => {
+              // Prioritet 2: Tættest på host's antal kampe (lige mange kampe)
+              const diffA = Math.abs(matchCounts[a - 1] - hostMatchCount);
+              const diffB = Math.abs(matchCounts[b - 1] - hostMatchCount);
+              if (diffA !== diffB) return diffA - diffB;
+
+              // Prioritet 3: Foretræk nøgler der spiller i første og/eller sidste runde
+              if (schedule) {
+                const firstRound = schedule[0].flat();
+                const lastRound = schedule[schedule.length - 1].flat();
+                const aScore = (firstRound.includes(a) ? 1 : 0) + (lastRound.includes(a) ? 1 : 0);
+                const bScore = (firstRound.includes(b) ? 1 : 0) + (lastRound.includes(b) ? 1 : 0);
+                return bScore - aScore;
+              }
+              return 0;
+            });
+
+            sameClubTeams.forEach(t => {
+              if (nonIntersecting.length === 0) return;
+              const bestKey = nonIntersecting.shift();
+              const tIdx = newTeams.findIndex(x => x.id === t.id);
+              newTeams[tIdx] = { ...newTeams[tIdx], fodaKey: bestKey };
+              availableKeys = availableKeys.filter(k => k !== bestKey);
+            });
+          }
+        }
+      }
+    }
   }
 
   // Pinnede hosts der allerede har nøgle er allerede håndteret ovenfor
@@ -1778,7 +1865,7 @@ const KampprogramView = ({ templateName, matrix, schedules = predefinedSchedules
   return (
     <div className="mt-12 bg-white p-8 rounded-xl border border-gray-200 shadow-sm w-full">
        <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2 text-xl">
-           <Calendar className="w-6 h-6 text-green-600" />
+           <Calendar className="w-6 h-6 text-[#c90b0e]" />
            Kampprogram (Visuel Oversigt)
        </h3>
        <p className="text-gray-600 mb-6 border-b border-gray-100 pb-4">
@@ -1825,18 +1912,18 @@ const KampprogramView = ({ templateName, matrix, schedules = predefinedSchedules
 
 const SortIcon = ({ columnKey, sortConfig }) => {
   if (sortConfig.key !== columnKey) return <span className="opacity-20 ml-1 inline-block"><ChevronDown className="w-3.5 h-3.5 inline-block" /></span>;
-  if (sortConfig.direction === 'asc') return <ChevronUp className="w-3.5 h-3.5 inline-block ml-1 text-pink-600" />;
-  return <ChevronDown className="w-3.5 h-3.5 inline-block ml-1 text-pink-600" />;
+  if (sortConfig.direction === 'asc') return <ChevronUp className="w-3.5 h-3.5 inline-block ml-1 text-[#c90b0e]" />;
+  return <ChevronDown className="w-3.5 h-3.5 inline-block ml-1 text-[#c90b0e]" />;
 };
 
 export default function App() {
-  const [criteria, setCriteria] = useState({ avoidSameClub: true, autoAssignHost: true, hostGetsMostMatches: true, avoidMultipleHostsOnSameDate: true, avoidPreviousHosts: true, checkBaneCapacity: true, avoidInsufficientBaneCapacity: true, prioritizeNewHostInAgeGroup: true, preferGeographicProximity: true, defaultPoolStartTime: '10:00' });
+  const [criteria, setCriteria] = useState({ avoidSameClub: false, autoAssignHost: true, hostGetsMostMatches: true, avoidMultipleHostsOnSameDate: true, avoidPreviousHosts: true, checkBaneCapacity: true, avoidInsufficientBaneCapacity: true, prioritizeNewHostInAgeGroup: true, preferGeographicProximity: true, defaultPoolStartTime: '10:00' });
   const [hostCriteriaPriority, setHostCriteriaPriority] = useState(['avoidInsufficientBaneCapacity', 'avoidMultipleHostsOnSameDate', 'avoidPreviousHosts', 'prioritizeNewHostInAgeGroup']);
   const [defaultTemplates, setDefaultTemplates] = useState(initialDefaultTemplates);
   const [customHostKeys, setCustomHostKeys] = useState({});
   const [activeTab, setActiveTab] = useState('rækker'); 
   const [previousTournaments, setPreviousTournaments] = useState([]);
-  const [wishes, setWishes] = useState([]);
+  const [wishes, setWishes] = useState(() => processExcelWishes(DEFAULT_WISHES_ROWS));
   const [editingWish, setEditingWish] = useState(null);
   const [clubs, setClubs] = useState(() => CLUBS_DATA.map((c, i) => ({ ...c, id: i.toString() })));
 
@@ -1887,8 +1974,17 @@ export default function App() {
   const [matrixPreview, setMatrixPreview] = useState({ isOpen: false, templateKey: null });
   const [multiPoolCompare, setMultiPoolCompare] = useState(null); // null eller { club }
   const [compareExpandedCols, setCompareExpandedCols] = useState(new Set());
+  const [wishFulfilledPopup, setWishFulfilledPopup] = useState(null); // null eller { wishes, assignments, club, tooltip }
   const [showTransferPrompt, setShowTransferPrompt] = useState(false);
-  const [guideStep, setGuideStep] = useState(1); // 1-7 = aktivt trin, null = lukket
+  const [driveSearchFrom, setDriveSearchFrom] = useState('');
+  const [driveSearchTo, setDriveSearchTo] = useState('');
+  const [driveClubMap, setDriveClubMap] = useState({});
+  const [showDriveClubMapEditor, setShowDriveClubMapEditor] = useState(false);
+  const [driveMapSearchTerm, setDriveMapSearchTerm] = useState('');
+  const [driveMapNewName, setDriveMapNewName] = useState('');
+  const [driveMapNewTarget, setDriveMapNewTarget] = useState('');
+  const [showDriveMatrix, setShowDriveMatrix] = useState(false);
+  const [guideStep, setGuideStep] = useState(null); // 1-8 = aktivt trin, null = lukket
   const [guideDrag, setGuideDrag] = useState({ x: 0, y: 0 });
   const [guideSize, setGuideSize] = useState({ w: 520, h: 0 }); // h=0 = auto height
 
@@ -1924,6 +2020,10 @@ export default function App() {
   const [ignoredBaneCapacityConflicts, setIgnoredBaneCapacityConflicts] = useState([]);
   const [ignoredHostMultiPoolConflicts, setIgnoredHostMultiPoolConflicts] = useState([]);
   const [validationModal, setValidationModal] = useState({ isOpen: false, scope: null });
+  const [smartDistributeResult, setSmartDistributeResult] = useState(null);
+  const [hostCheckModal, setHostCheckModal] = useState({ isOpen: false, issues: [] });
+  const [processingModal, setProcessingModal] = useState({ isOpen: false, message: '', attempts: 0, maxAttempts: 0 });
+  const [distributeRemainingPopup, setDistributeRemainingPopup] = useState({ isOpen: false, allRows: false });
 
   // Hjælpefunktion: genberegn en række med korrekte 3:3/5:5 skabeloner (sender begge sæt for per-pulje format-override)
   const recalcRow = (row) => {
@@ -1950,7 +2050,7 @@ export default function App() {
   }, [data]);
 
   const handleSaveProject = () => {
-    const projectData = { data, criteria, defaultTemplates, customHostKeys, ignoredHostConflicts, ignoredPreviousHosts, ignoredBaneCapacityConflicts, ignoredHostMultiPoolConflicts, hostCriteriaPriority, previousTournaments, wishes, clubs, defaultTemplates3v3, customHostKeys3v3 };
+    const projectData = { data, criteria, defaultTemplates, customHostKeys, ignoredHostConflicts, ignoredPreviousHosts, ignoredBaneCapacityConflicts, ignoredHostMultiPoolConflicts, hostCriteriaPriority, previousTournaments, wishes, clubs, defaultTemplates3v3, customHostKeys3v3, driveClubMap };
     const blob = new Blob([JSON.stringify(projectData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -2011,6 +2111,7 @@ export default function App() {
         if (projectData.clubs) setClubs(projectData.clubs);
         if (projectData.defaultTemplates3v3) setDefaultTemplates3v3(projectData.defaultTemplates3v3);
         if (projectData.customHostKeys3v3) setCustomHostKeys3v3(projectData.customHostKeys3v3);
+        if (projectData.driveClubMap) setDriveClubMap(projectData.driveClubMap);
 
         if (projectData.data && projectData.data.length > 0) setActiveRowId(projectData.data[0].id);
       } catch (err) {
@@ -2153,6 +2254,25 @@ export default function App() {
       e.target.value = '';
   };
 
+  // Sync driveClubMap state til module-level variabel så findDriveClub() kan bruge den
+  useEffect(() => { driveClubMapOverrides = driveClubMap; }, [driveClubMap]);
+
+  // Automatisk find alle klubber i stævnedata og vis deres kørselstids-mapping
+  const activeClubDriveMappings = useMemo(() => {
+    const clubSet = new Set();
+    data.forEach(row => {
+      (row.teams || []).forEach(t => { if (t.club) clubSet.add(t.club); });
+      (row.pools || []).forEach(p => (p.teams || []).forEach(t => { if (t.club) clubSet.add(t.club); }));
+    });
+    return [...clubSet].sort((a, b) => a.localeCompare(b, 'da')).map(club => {
+      const norm = normalizeClubName(club);
+      const hasUserMap = !!(driveClubMap[club] || driveClubMap[norm]);
+      const hasDefaultMap = !!(DEFAULT_DRIVE_CLUB_MAP[club] || DEFAULT_DRIVE_CLUB_MAP[norm]);
+      const resolved = findDriveClub(club);
+      return { original: club, normalized: norm, resolved, hasExplicitMap: hasUserMap || hasDefaultMap, hasUserMap };
+    });
+  }, [data, driveClubMap]);
+
   useEffect(() => {
     const handleMouseMove = (e) => {
       if (isResizing) {
@@ -2259,10 +2379,15 @@ export default function App() {
         const matrixData = currentTemplate ? (fodaMatrices[currentTemplate] || fodaMatrices3v3[currentTemplate])?.matrix : null;
 
         uniqueDups.forEach(club => {
-           // Overstyring: Hvis klubben har en SAME_POOL regel, er der INGEN fejl.
-           const clubHasSamePoolWish = rowWishes.some(w => w.ruleType === 'SAME_POOL' && w.club.toLowerCase() === club.toLowerCase());
-           
-           if (!clubHasSamePoolWish) {
+           // Overstyring: Hvis klubben har en SAME_POOL eller SAME_LOCATION regel, er der INGEN fejl.
+           const clubHasSamePoolWish = rowWishes.some(w => (w.ruleType === 'SAME_POOL' || w.ruleType === 'SAME_LOCATION') && matchClubName(w.club, club));
+
+           // Undertryk fejl hvis klubben har FORCE_HOST ønske og ER vært i denne pulje
+           const clubHasForceHostAsHost = rowWishes.some(w =>
+             w.ruleType === 'FORCE_HOST' && matchClubName(w.club, club)
+           ) && poolTeams.some(t => matchClubName(t.club, club) && t.isHost);
+
+           if (!clubHasSamePoolWish && !clubHasForceHostAsHost) {
               const teamsOfClub = poolTeams.filter(t => t.club === club);
               let isResolved = false;
               if (teamsOfClub.length >= 2 && matrixData) {
@@ -2428,33 +2553,43 @@ export default function App() {
       });
     });
 
-    // 4) Klubber der er vært i flere puljer (på tværs af alle rækker og datoer)
+    // 4) Klubber der er vært i flere puljer på SAMME spilledato
     const hostAssignments = {};
     allData.forEach(r => {
+      const rDateMatch = r.name.match(/\d{1,2}\/\d{1,2}/);
+      const rDate = rDateMatch ? rDateMatch[0] : null;
       r.pools.forEach(pool => {
         const pTeams = r.teams.filter(t => t.poolId === pool.id);
         const host = pTeams.find(t => t.isHost && !t.isBye);
         if (host) {
           if (!hostAssignments[host.club]) hostAssignments[host.club] = [];
-          hostAssignments[host.club].push({ rowId: r.id, rowName: r.name, poolId: pool.id, poolName: pool.name });
+          hostAssignments[host.club].push({ rowId: r.id, rowName: r.name, poolId: pool.id, poolName: pool.name, date: rDate });
         }
       });
     });
 
     rowsToCheck.forEach(row => {
+      const rowDateMatch = row.name.match(/\d{1,2}\/\d{1,2}/);
+      const rowDate = rowDateMatch ? rowDateMatch[0] : null;
+
       row.pools.forEach(pool => {
         const pTeams = row.teams.filter(t => t.poolId === pool.id);
         const host = pTeams.find(t => t.isHost && !t.isBye);
         if (!host) return;
 
         const allLocations = hostAssignments[host.club] || [];
-        const otherLocations = allLocations.filter(l => l.poolId !== pool.id);
+        // Kun konflikter på SAMME spilledato — forskellige datoer er aldrig en konflikt
+        const otherLocations = allLocations.filter(l => l.poolId !== pool.id && l.date === rowDate);
         if (otherLocations.length > 0) {
           // Spring over hvis allerede dækket af HOST_DATE_CONFLICT for denne pulje
           const alreadyCovered = conflicts.some(c =>
             c.type === 'HOST_DATE_CONFLICT' && c.poolId === pool.id && c.hostClub === host.club
           );
-          if (!alreadyCovered) {
+          // Spring over hvis klubben har et FORCE_HOST ønske — så er multi-pulje-værtskab tilsigtet
+          const hasForceHostWish = wishes.some(w =>
+            w.ruleType === 'FORCE_HOST' && w.isActive !== false && matchClubName(w.club, host.club)
+          );
+          if (!alreadyCovered && !hasForceHostWish) {
             const multiPoolIgnoreKey = `${host.club}_multipool`;
             if (!ignoredHostMultiPoolConflicts.includes(multiPoolIgnoreKey)) {
               const othersText = otherLocations.map(l => `${l.poolName} (${l.rowName})`).join(', ');
@@ -3275,8 +3410,16 @@ export default function App() {
 
     const hostsChosen = new Map();
     const chosenHostIds = new Set();
+    const chosenHostClubs = new Set(); // Track club names to prevent same club hosting multiple pools
     const totalRealTeams = shuffled.filter(t => !t.isBye).length + teamsToKeep.filter(t => !t.isBye).length;
     const estimatedPoolSize = Math.max(1, Math.ceil(totalRealTeams / row.pools.length));
+
+    // Pre-populate med klubber der allerede har fastlåste værter
+    teamsToKeep.forEach(t => {
+      if (t.isHost && !t.isBye && t.poolId !== null) {
+        chosenHostClubs.add(t.club);
+      }
+    });
 
     row.pools.forEach(pool => {
       if (pool.isLocked) return; // Låst pulje — bevar eksisterende vært
@@ -3295,14 +3438,20 @@ export default function App() {
         return !tWishes.some(w => w.ruleType === 'AVOID_HOST');
       });
 
+      // Tjek FORCE_HOST — men kun hvis klubben ikke allerede er vært i en anden pulje
       const forcedHosts = potentialHosts.filter(t => {
         const tWishes = applicableWishes.filter(w => matchClubName(t.club, w.club));
-        return tWishes.some(w => w.ruleType === 'FORCE_HOST');
+        const hasForceHost = tWishes.some(w => w.ruleType === 'FORCE_HOST');
+        if (!hasForceHost) return false;
+        // Hvis klubben allerede har et hold som vært, spring over
+        const clubAlreadyHost = [...chosenHostClubs].some(c => matchClubName(c, t.club));
+        return !clubAlreadyHost;
       });
 
       if (forcedHosts.length > 0) {
         hostsChosen.set(pool.id, forcedHosts[0]);
         chosenHostIds.add(forcedHosts[0].id);
+        chosenHostClubs.add(forcedHosts[0].club);
       } else {
         const specific = pool.specificCriteria || { useSpecific: false };
         const avoidMultiDate = specific.useSpecific && specific.avoidMultipleHostsOnSameDate !== undefined ? specific.avoidMultipleHostsOnSameDate : globalCriteria.avoidMultipleHostsOnSameDate;
@@ -3370,6 +3519,7 @@ export default function App() {
         if (filteredHosts.length > 0) {
           hostsChosen.set(pool.id, filteredHosts[0]);
           chosenHostIds.add(filteredHosts[0].id);
+          chosenHostClubs.add(filteredHosts[0].club);
         }
       }
     });
@@ -3394,19 +3544,20 @@ export default function App() {
       return spec.useSpecific ? spec.preferGeographicProximity : globalCriteria.preferGeographicProximity;
     });
 
-    const poolCentersForDistribution = {};
+    const poolHostClubs = {};
     if (anyPoolWantsGeo) {
       row.pools.forEach(pool => {
+        if (pool.isLocked) return;
         const isOrg = (pool.hostMode || 'host') === 'organizer';
         if (isOrg && pool.organizerClub) {
-          poolCentersForDistribution[pool.id] = getClubCoordinates(pool.organizerClub);
+          poolHostClubs[pool.id] = pool.organizerClub;
         } else {
           const hostTeam = hostsChosen.get(pool.id);
           if (hostTeam) {
-            poolCentersForDistribution[pool.id] = getClubCoordinates(hostTeam.club);
+            poolHostClubs[pool.id] = hostTeam.club;
           } else {
             const pinnedHost = teamsToKeep.find(t => t.poolId === pool.id && t.isHost && !t.isBye);
-            if (pinnedHost) poolCentersForDistribution[pool.id] = getClubCoordinates(pinnedHost.club);
+            if (pinnedHost) poolHostClubs[pool.id] = pinnedHost.club;
           }
         }
       });
@@ -3451,16 +3602,15 @@ export default function App() {
           return a.teamsCount - b.teamsCount;
         });
       } else {
-        const teamCoord = anyPoolWantsGeo ? getClubCoordinates(team.club) : null;
         validPools.sort((a, b) => {
           // Primary: pool balance — smallest pool first
           if (a.teamsCount !== b.teamsCount) return a.teamsCount - b.teamsCount;
-          // Secondary: geographic proximity to pool's host (tiebreaker when pools equal size)
-          if (teamCoord) {
-            const centerA = poolCentersForDistribution[a.id];
-            const centerB = poolCentersForDistribution[b.id];
-            if (centerA && centerB) {
-              return haversineDistance(teamCoord, centerA) - haversineDistance(teamCoord, centerB);
+          // Secondary: laveste kørselstid til puljens vært
+          if (anyPoolWantsGeo) {
+            const hostA = poolHostClubs[a.id];
+            const hostB = poolHostClubs[b.id];
+            if (hostA && hostB) {
+              return getDriveTimeToHost(team.club, hostA) - getDriveTimeToHost(team.club, hostB);
             }
           }
           return 0;
@@ -3476,7 +3626,7 @@ export default function App() {
       if (!team.isBye) selectedPool.clubSet.add(team.club);
     });
 
-    // === PHASE 3: GEOGRAPHIC PROXIMITY OPTIMIZATION ===
+    // === PHASE 3: KØRSELSTID-OPTIMERING (swap hold mellem puljer for lavere total kørselstid) ===
     if (row.pools.length >= 2) {
       const anyPoolWantsGeo = row.pools.some(pool => {
         const spec = pool.specificCriteria || { useSpecific: false };
@@ -3484,19 +3634,20 @@ export default function App() {
       });
 
       if (anyPoolWantsGeo) {
-        const poolCenters = {};
+        const poolHostClubsForSwap = {};
         row.pools.forEach(pool => {
+          if (pool.isLocked) return;
           const isOrg = (pool.hostMode || 'host') === 'organizer';
           if (isOrg && pool.organizerClub) {
-            poolCenters[pool.id] = getClubCoordinates(pool.organizerClub);
+            poolHostClubsForSwap[pool.id] = pool.organizerClub;
           } else {
             const host = newTeams.find(t => t.poolId === pool.id && t.isHost);
-            if (host) poolCenters[pool.id] = getClubCoordinates(host.club);
+            if (host) poolHostClubsForSwap[pool.id] = host.club;
           }
         });
 
-        const poolsWithCoords = Object.keys(poolCenters).filter(id => poolCenters[id] !== null);
-        if (poolsWithCoords.length >= 2) {
+        const poolsWithHosts = Object.keys(poolHostClubsForSwap).filter(id => poolHostClubsForSwap[id]);
+        if (poolsWithHosts.length >= 2) {
           const keptIds = new Set(teamsToKeep.map(t => t.id));
           let improved = true;
           let iterations = 0;
@@ -3509,9 +3660,8 @@ export default function App() {
               const poolA = row.pools.find(p => p.id === tA.poolId);
               const specA = poolA?.specificCriteria || { useSpecific: false };
               const geoA = specA.useSpecific ? specA.preferGeographicProximity : globalCriteria.preferGeographicProximity;
-              const centerA = poolCenters[tA.poolId];
-              const coordA = getClubCoordinates(tA.club);
-              if (!centerA || !coordA) continue;
+              const hostClubA = poolHostClubsForSwap[tA.poolId];
+              if (!hostClubA) continue;
               for (let j = i + 1; j < newTeams.length; j++) {
                 const tB = newTeams[j];
                 if (!tB.poolId || tB.isHost || tB.isBye || tB.isPinned || keptIds.has(tB.id)) continue;
@@ -3520,12 +3670,11 @@ export default function App() {
                 const specB = poolB?.specificCriteria || { useSpecific: false };
                 const geoB = specB.useSpecific ? specB.preferGeographicProximity : globalCriteria.preferGeographicProximity;
                 if (!geoA && !geoB) continue;
-                const centerB = poolCenters[tB.poolId];
-                const coordB = getClubCoordinates(tB.club);
-                if (!centerB || !coordB) continue;
-                const currentCost = haversineDistance(coordA, centerA) + haversineDistance(coordB, centerB);
-                const swappedCost = haversineDistance(coordA, centerB) + haversineDistance(coordB, centerA);
-                if (swappedCost < currentCost - 0.5) {
+                const hostClubB = poolHostClubsForSwap[tB.poolId];
+                if (!hostClubB) continue;
+                const currentCost = getDriveTimeToHost(tA.club, hostClubA) + getDriveTimeToHost(tB.club, hostClubB);
+                const swappedCost = getDriveTimeToHost(tA.club, hostClubB) + getDriveTimeToHost(tB.club, hostClubA);
+                if (swappedCost < currentCost - 1) { // 1 minut margin
                   const avoidA = specA.useSpecific ? specA.avoidSameClub : globalCriteria.avoidSameClub;
                   const avoidB = specB.useSpecific ? specB.avoidSameClub : globalCriteria.avoidSameClub;
                   const poolAOtherClubs = newTeams.filter(t => t.poolId === tA.poolId && t.id !== tA.id && !t.isBye).map(t => t.club);
@@ -3573,26 +3722,296 @@ export default function App() {
     return recalculateAllRowKeys({ ...row, teams: newTeams }, globalCriteria, is3v3 ? defaultTemplates3v3 : defaultTemplates, is3v3 ? customHostKeys3v3 : customHostKeys, is3v3 ? defaultTemplates : defaultTemplates3v3, is3v3 ? customHostKeys : customHostKeys3v3);
   };
 
-  // --- Geografisk spredning: sortér kandidater så de der er længst fra allerede valgte værter kommer først ---
+  // --- Fordel KUN øvrige hold (værter allerede tildelt) med stærk algoritme ---
+  const distributeRemainingTeams = (row, globalCriteria, allRowsData) => {
+    if (row.pools.length === 0) return row;
+
+    const applicableWishes = getApplicableWishes(row);
+    const MAX_DRIVE_TIME = 50; // Hård grænse: 50 minutter
+
+    // Bevar alle eksisterende hold i puljer (inkl. værter og pinnede)
+    const teamsInPools = row.teams.filter(t => t.poolId !== null).map(t => ({ ...t }));
+    const unassigned = row.teams.filter(t => t.poolId === null && !t.isBye).map(t => ({ ...t }));
+    const shuffled = [...unassigned].sort(() => Math.random() - 0.5);
+
+    let newTeams = [...teamsInPools, ...shuffled];
+
+    // Fjern gamle oversiddere
+    newTeams = newTeams.filter(t => !(t.isBye && t.name === 'Oversidder'));
+
+    const totalRealTeams = newTeams.filter(t => !t.isBye).length;
+    const maxPerPool = Math.ceil(totalRealTeams / row.pools.length);
+
+    const poolData = row.pools.map(p => {
+      const specific = p.specificCriteria || { useSpecific: false };
+      return {
+        id: p.id,
+        teamsCount: teamsInPools.filter(t => t.poolId === p.id).length,
+        clubSet: new Set(teamsInPools.filter(t => t.poolId === p.id && !t.isBye).map(t => t.club)),
+        avoidSameClub: specific.useSpecific ? specific.avoidSameClub : globalCriteria.avoidSameClub
+      };
+    });
+
+    // Find værtsklubberne for kørselstid-beregning
+    const poolHostClubs = {};
+    row.pools.forEach(pool => {
+      if (pool.isLocked) return;
+      const isOrg = (pool.hostMode || 'host') === 'organizer';
+      if (isOrg && pool.organizerClub) {
+        poolHostClubs[pool.id] = pool.organizerClub;
+      } else {
+        const host = newTeams.find(t => t.poolId === pool.id && t.isHost && !t.isBye);
+        if (host) poolHostClubs[pool.id] = host.club;
+      }
+    });
+
+    // === PHASE 2: FORDEL ØVRIGE HOLD MED STÆRKERE CONSTRAINTS ===
+    shuffled.forEach((team) => {
+      const teamWishes = applicableWishes.filter(w => matchClubName(team.club, w.club));
+      const wantsSamePool = teamWishes.some(w => w.ruleType === 'SAME_POOL');
+      const clubsToAvoid = teamWishes.filter(w => w.ruleType === 'AVOID_CLUB').map(w => w.text.toLowerCase());
+      const lockedPoolIds = new Set(row.pools.filter(p => p.isLocked).map(p => p.id));
+
+      let validPools = poolData.filter(p => {
+        if (lockedPoolIds.has(p.id)) return false;
+        // 50 min hard cap
+        const hostClub = poolHostClubs[p.id];
+        if (hostClub) {
+          const dt = getDriveTimeToHost(team.club, hostClub);
+          if (dt !== Infinity && dt > MAX_DRIVE_TIME) return false;
+        }
+        // AVOID_CLUB
+        const hasEnemy = Array.from(p.clubSet).some(clubInPool =>
+          clubsToAvoid.some(avoidText => avoidText.includes(clubInPool.toLowerCase()))
+        );
+        if (hasEnemy) return false;
+        // avoidSameClub (medmindre SAME_POOL)
+        if (p.avoidSameClub && p.clubSet.has(team.club) && !wantsSamePool) return false;
+        return true;
+      });
+
+      // Fallback: hvis ingen pulje opfylder hård grænse, brug alle ulåste puljer
+      if (validPools.length === 0) {
+        validPools = poolData.filter(p => !lockedPoolIds.has(p.id));
+      }
+      if (validPools.length === 0) validPools = [...poolData];
+
+      // Kapacitetsfilter
+      const capacityPools = validPools.filter(p => p.teamsCount < maxPerPool);
+      if (capacityPools.length > 0) validPools = capacityPools;
+
+      // Sortér: SAME_POOL > pool balance > kørselstid
+      if (wantsSamePool) {
+        validPools.sort((a, b) => {
+          const aHasClub = a.clubSet.has(team.club) ? 0 : 1;
+          const bHasClub = b.clubSet.has(team.club) ? 0 : 1;
+          if (aHasClub !== bHasClub) return aHasClub - bHasClub;
+          return a.teamsCount - b.teamsCount;
+        });
+      } else {
+        validPools.sort((a, b) => {
+          if (a.teamsCount !== b.teamsCount) return a.teamsCount - b.teamsCount;
+          const hostA = poolHostClubs[a.id];
+          const hostB = poolHostClubs[b.id];
+          if (hostA && hostB) {
+            return getDriveTimeToHost(team.club, hostA) - getDriveTimeToHost(team.club, hostB);
+          }
+          return 0;
+        });
+      }
+
+      const selectedPool = validPools[0];
+      const teamIndex = newTeams.findIndex(t => t.id === team.id);
+      newTeams[teamIndex] = { ...team, poolId: selectedPool.id, isHost: false };
+      selectedPool.teamsCount += 1;
+      if (!team.isBye) selectedPool.clubSet.add(team.club);
+    });
+
+    // === PHASE 3: KØRSELSTID-OPTIMERING (swap med 50 min hard cap) ===
+    if (row.pools.length >= 2) {
+      const anyPoolWantsGeo = row.pools.some(pool => {
+        const spec = pool.specificCriteria || { useSpecific: false };
+        return spec.useSpecific ? spec.preferGeographicProximity : globalCriteria.preferGeographicProximity;
+      });
+
+      if (anyPoolWantsGeo) {
+        const poolHostClubsForSwap = {};
+        row.pools.forEach(pool => {
+          if (pool.isLocked) return;
+          const isOrg = (pool.hostMode || 'host') === 'organizer';
+          if (isOrg && pool.organizerClub) {
+            poolHostClubsForSwap[pool.id] = pool.organizerClub;
+          } else {
+            const host = newTeams.find(t => t.poolId === pool.id && t.isHost);
+            if (host) poolHostClubsForSwap[pool.id] = host.club;
+          }
+        });
+
+        const poolsWithHosts = Object.keys(poolHostClubsForSwap).filter(id => poolHostClubsForSwap[id]);
+        if (poolsWithHosts.length >= 2) {
+          const keptIds = new Set(teamsInPools.filter(t => t.isPinned || t.isHost).map(t => t.id));
+          let improved = true;
+          let iterations = 0;
+          while (improved && iterations < 50) {
+            improved = false;
+            iterations++;
+            for (let i = 0; i < newTeams.length; i++) {
+              const tA = newTeams[i];
+              if (!tA.poolId || tA.isHost || tA.isBye || tA.isPinned || keptIds.has(tA.id)) continue;
+              const poolA = row.pools.find(p => p.id === tA.poolId);
+              const specA = poolA?.specificCriteria || { useSpecific: false };
+              const geoA = specA.useSpecific ? specA.preferGeographicProximity : globalCriteria.preferGeographicProximity;
+              const hostClubA = poolHostClubsForSwap[tA.poolId];
+              if (!hostClubA) continue;
+              for (let j = i + 1; j < newTeams.length; j++) {
+                const tB = newTeams[j];
+                if (!tB.poolId || tB.isHost || tB.isBye || tB.isPinned || keptIds.has(tB.id)) continue;
+                if (tA.poolId === tB.poolId) continue;
+                const poolB = row.pools.find(p => p.id === tB.poolId);
+                const specB = poolB?.specificCriteria || { useSpecific: false };
+                const geoB = specB.useSpecific ? specB.preferGeographicProximity : globalCriteria.preferGeographicProximity;
+                if (!geoA && !geoB) continue;
+                const hostClubB = poolHostClubsForSwap[tB.poolId];
+                if (!hostClubB) continue;
+                // 50 min hard cap check for swap
+                const dtAtoB = getDriveTimeToHost(tA.club, hostClubB);
+                const dtBtoA = getDriveTimeToHost(tB.club, hostClubA);
+                if ((dtAtoB !== Infinity && dtAtoB > MAX_DRIVE_TIME) || (dtBtoA !== Infinity && dtBtoA > MAX_DRIVE_TIME)) continue;
+                const currentCost = getDriveTimeToHost(tA.club, hostClubA) + getDriveTimeToHost(tB.club, hostClubB);
+                const swappedCost = dtAtoB + dtBtoA;
+                if (swappedCost < currentCost - 1) {
+                  const avoidA = specA.useSpecific ? specA.avoidSameClub : globalCriteria.avoidSameClub;
+                  const avoidB = specB.useSpecific ? specB.avoidSameClub : globalCriteria.avoidSameClub;
+                  const poolAOtherClubs = newTeams.filter(t => t.poolId === tA.poolId && t.id !== tA.id && !t.isBye).map(t => t.club);
+                  const poolBOtherClubs = newTeams.filter(t => t.poolId === tB.poolId && t.id !== tB.id && !t.isBye).map(t => t.club);
+                  const violatesA = avoidA && poolAOtherClubs.includes(tB.club);
+                  const violatesB = avoidB && poolBOtherClubs.includes(tA.club);
+                  if (!violatesA && !violatesB) {
+                    const tempPoolId = newTeams[i].poolId;
+                    newTeams[i] = { ...newTeams[i], poolId: newTeams[j].poolId };
+                    newTeams[j] = { ...newTeams[j], poolId: tempPoolId };
+                    improved = true;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // === PHASE 4: AUTO-FILL SMALL POOLS WITH BYES ===
+    newTeams = newTeams.filter(t => !(t.isBye && t.name === 'Oversidder'));
+    row.pools.forEach(pool => {
+      if (pool.isLocked) return;
+      const realTeamsInPool = newTeams.filter(t => t.poolId === pool.id && !t.isBye).length;
+      const minPoolSize = row.name.includes('3:3') ? 3 : 4;
+      if (realTeamsInPool > 0 && realTeamsInPool < minPoolSize) {
+        const byesToAdd = minPoolSize - realTeamsInPool;
+        for (let b = 0; b < byesToAdd; b++) {
+          newTeams.push({
+            id: `bye_${Date.now()}_${Math.random()}_${pool.id}_${b}`,
+            name: 'Oversidder',
+            poolId: pool.id,
+            club: `Oversidder_System_${Date.now()}_${b}`,
+            isHost: false,
+            isBye: true,
+            isPinned: false,
+            fodaKey: null
+          });
+        }
+      }
+    });
+
+    const is3v3r = row.name.includes('3:3');
+    return recalculateAllRowKeys({ ...row, teams: newTeams }, globalCriteria, is3v3r ? defaultTemplates3v3 : defaultTemplates, is3v3r ? customHostKeys3v3 : customHostKeys, is3v3r ? defaultTemplates : defaultTemplates3v3, is3v3r ? customHostKeys : customHostKeys3v3);
+  };
+
+  // --- Geografisk spredning: sortér kandidater så de der har størst kørselstid fra allerede valgte værter kommer først ---
   const applyGeographicSpreadScoring = (candidates, chosenHostsMap) => {
-    const chosenCoords = [];
+    const chosenHostClubs = [];
     chosenHostsMap.forEach(({ team }) => {
-      const coord = getClubCoordinates(team.club);
-      if (coord) chosenCoords.push(coord);
+      if (team.club) chosenHostClubs.push(team.club);
     });
-    if (chosenCoords.length === 0) return candidates;
+    if (chosenHostClubs.length === 0) return candidates;
     const scored = candidates.map(t => {
-      const coord = getClubCoordinates(t.club);
-      if (!coord) return { team: t, minDist: 0 };
-      const minDist = Math.min(...chosenCoords.map(c => haversineDistance(coord, c)));
-      return { team: t, minDist };
+      const minTime = Math.min(...chosenHostClubs.map(hc => getDriveTimeToHost(t.club, hc)));
+      return { team: t, minTime };
     });
-    scored.sort((a, b) => b.minDist - a.minDist);
+    scored.sort((a, b) => b.minTime - a.minTime); // Størst afstand først = bedst spredt
     return scored.map(s => s.team);
   };
 
+  // Scorer værtskandidat ud fra gæsternes kørselstid — straffer kandidater med lange gæstekørsler
+  const scoreCandidatesByGuestDriveTime = (candidates, allTeamsInRow) => {
+    if (candidates.length <= 1) return candidates;
+    const nonByeTeams = allTeamsInRow.filter(t => !t.isBye);
+    if (nonByeTeams.length === 0) return candidates;
+
+    const scored = candidates.map(c => {
+      const driveTimes = nonByeTeams
+        .filter(t => t.id !== c.id)
+        .map(t => getDriveTimeToHost(t.club, c.club))
+        .filter(dt => dt !== Infinity);
+
+      if (driveTimes.length === 0) return { team: c, score: 0 };
+
+      const avgTime = driveTimes.reduce((s, v) => s + v, 0) / driveTimes.length;
+      const maxTime = Math.max(...driveTimes);
+      // Penalty: ekstra 20 point per hold der kører >40 min
+      const over40Penalty = driveTimes.filter(dt => dt > 40).length * 20;
+      // Penalty: ekstra 10 point per hold der kører >30 min
+      const over30Penalty = driveTimes.filter(dt => dt > 30).length * 10;
+
+      return { team: c, score: avgTime + over40Penalty + over30Penalty, maxTime };
+    });
+
+    scored.sort((a, b) => a.score - b.score); // Lavest score = bedst
+    return scored.map(s => s.team);
+  };
+
+  // Fyld puljer med oversidder-pladser (byes) baseret på estimeret puljestørrelse
+  const fillPoolsWithByes = (row) => {
+    if (row.pools.length === 0) return row;
+    const totalRealTeams = row.teams.filter(t => !t.isBye).length;
+    const estimatedPoolSize = Math.max(1, Math.ceil(totalRealTeams / row.pools.length));
+    const is3v3 = row.name.includes('3:3');
+    const minSize = is3v3 ? 3 : 4;
+    const targetSize = Math.max(estimatedPoolSize, minSize);
+
+    let newTeams = row.teams.filter(t => !(t.isBye && t.name === 'Oversidder'));
+
+    row.pools.forEach(pool => {
+      const teamsInPool = newTeams.filter(t => t.poolId === pool.id && !t.isBye);
+      const byesNeeded = targetSize - teamsInPool.length;
+      for (let b = 0; b < byesNeeded; b++) {
+        newTeams.push({
+          id: `bye_${Date.now()}_${Math.random()}_${pool.id}_${b}`,
+          name: 'Oversidder',
+          poolId: pool.id,
+          club: `Oversidder_System_${Date.now()}_${b}`,
+          isHost: false,
+          isBye: true,
+          isPinned: false,
+          fodaKey: null
+        });
+      }
+    });
+
+    const is3v3Row = row.name.includes('3:3');
+    return recalculateAllRowKeys(
+      { ...row, teams: newTeams },
+      criteria,
+      is3v3Row ? defaultTemplates3v3 : defaultTemplates,
+      is3v3Row ? customHostKeys3v3 : customHostKeys,
+      is3v3Row ? defaultTemplates : defaultTemplates3v3,
+      is3v3Row ? customHostKeys : customHostKeys3v3
+    );
+  };
+
   // --- Fordel KUN værtsklubber til puljer (uden at flytte øvrige hold) ---
-  const distributeHostsOnly = (row, globalCriteria, allRowsData, previousHistory) => {
+  // lockedHostAssignments: optional Map(poolId -> teamId) — pools med låste værter springes over
+  const distributeHostsOnly = (row, globalCriteria, allRowsData, previousHistory, lockedHostAssignments) => {
     if (row.pools.length === 0) return row;
     const applicableWishes = getApplicableWishes(row);
 
@@ -3616,11 +4035,34 @@ export default function App() {
     let newTeams = row.teams.map(t => ({ ...t }));
     const hostsChosen = new Map(); // poolId -> { team, isForced }
     const chosenHostIds = new Set();
+    const chosenHostClubs = new Set(); // Track club names to prevent same club hosting multiple pools
     const totalRealTeams = newTeams.filter(t => !t.isBye).length;
     const estimatedPoolSize = Math.max(1, Math.ceil(totalRealTeams / row.pools.length));
 
+    // Pre-populate med klubber der allerede har værter i denne række
+    newTeams.forEach(t => {
+      if (t.isHost && !t.isBye && t.poolId !== null) {
+        chosenHostClubs.add(t.club);
+      }
+    });
+
     // Alle kandidat-hold (ikke-bye, ikke allerede vært i en pulje)
     const candidateTeams = newTeams.filter(t => !t.isBye);
+
+    // Håndter progressivt låste værter: sæt dem først, så de ikke vælges til andre pools
+    if (lockedHostAssignments && lockedHostAssignments.size > 0) {
+      row.pools.forEach(pool => {
+        const lockedTeamId = lockedHostAssignments.get(pool.id);
+        if (!lockedTeamId) return;
+        const lockedTeam = newTeams.find(t => t.id === lockedTeamId);
+        if (lockedTeam) {
+          hostsChosen.set(pool.id, { team: lockedTeam, isForced: true });
+          chosenHostIds.add(lockedTeam.id);
+          chosenHostClubs.add(lockedTeam.club);
+          existingHostsOnDate.add(lockedTeam.club);
+        }
+      });
+    }
 
     // Shuffled kandidater for tilfældighed
     const shuffledCandidates = [...candidateTeams].sort(() => Math.random() - 0.5);
@@ -3628,6 +4070,8 @@ export default function App() {
     row.pools.forEach(pool => {
       if (pool.isLocked) return;
       if ((pool.hostMode || 'host') === 'organizer') return;
+      // Spring over pools der allerede er progressivt låst
+      if (hostsChosen.has(pool.id)) return;
       const specific = pool.specificCriteria || { useSpecific: false };
       const autoAssignHost = specific.useSpecific ? specific.autoAssignHost : globalCriteria.autoAssignHost;
       if (!autoAssignHost) return;
@@ -3645,15 +4089,20 @@ export default function App() {
         return !tWishes.some(w => w.ruleType === 'AVOID_HOST');
       });
 
-      // Tjek FORCE_HOST
+      // Tjek FORCE_HOST — men kun hvis klubben ikke allerede er vært i en anden pulje
       const forcedHosts = potentialHosts.filter(t => {
         const tWishes = applicableWishes.filter(w => matchClubName(t.club, w.club));
-        return tWishes.some(w => w.ruleType === 'FORCE_HOST');
+        const hasForceHost = tWishes.some(w => w.ruleType === 'FORCE_HOST');
+        if (!hasForceHost) return false;
+        // Hvis klubben allerede har et hold som vært, spring over
+        const clubAlreadyHost = [...chosenHostClubs].some(c => matchClubName(c, t.club));
+        return !clubAlreadyHost;
       });
 
       if (forcedHosts.length > 0) {
         hostsChosen.set(pool.id, { team: forcedHosts[0], isForced: true });
         chosenHostIds.add(forcedHosts[0].id);
+        chosenHostClubs.add(forcedHosts[0].club);
       } else {
         // Anvend standard-filtre i prioritet
         const avoidMultiDate = specific.useSpecific && specific.avoidMultipleHostsOnSameDate !== undefined ? specific.avoidMultipleHostsOnSameDate : globalCriteria.avoidMultipleHostsOnSameDate;
@@ -3717,9 +4166,15 @@ export default function App() {
           filteredHosts = applyGeographicSpreadScoring(filteredHosts, hostsChosen);
         }
 
+        // Gæste-kørselstid: straffer værter hvor gæsterne skal køre langt
+        if (filteredHosts.length > 1) {
+          filteredHosts = scoreCandidatesByGuestDriveTime(filteredHosts, candidateTeams);
+        }
+
         if (filteredHosts.length > 0) {
           hostsChosen.set(pool.id, { team: filteredHosts[0], isForced: false });
           chosenHostIds.add(filteredHosts[0].id);
+          chosenHostClubs.add(filteredHosts[0].club);
         }
       }
     });
@@ -3735,6 +4190,126 @@ export default function App() {
 
     const is3v3 = row.name.includes('3:3');
     return recalculateAllRowKeys({ ...row, teams: newTeams }, globalCriteria, is3v3 ? defaultTemplates3v3 : defaultTemplates, is3v3 ? customHostKeys3v3 : customHostKeys, is3v3 ? defaultTemplates : defaultTemplates3v3, is3v3 ? customHostKeys : customHostKeys3v3);
+  };
+
+  // --- Smart værtsfordeling med progressiv låsning (op til 500 forsøg / 5 sekunder) ---
+  const smartDistributeHosts = (inputData, scope) => {
+    const MAX_ATTEMPTS = 500;
+    const TIME_LIMIT = 5000; // 5 sekunder
+    const startTime = Date.now();
+    const lockedHostAssignments = new Map(); // poolId -> teamId (progressivt låst)
+
+    let bestData = null;
+    let bestConflictCount = Infinity;
+    let bestConflicts = [];
+    let usedAttempts = 0;
+
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      // Tidsbegrænsning
+      if (Date.now() - startTime > TIME_LIMIT) break;
+
+      usedAttempts = attempt + 1;
+      let newData = inputData.map(r => ({
+        ...r,
+        teams: r.teams.map(t => ({ ...t })),
+        pools: r.pools.map(p => ({ ...p }))
+      }));
+
+      // Fjern eksisterende hosts fra ulåste pools (nulstil for nyt forsøg)
+      for (let i = 0; i < newData.length; i++) {
+        if (scope === 'active' && newData[i].id !== activeRowId) continue;
+        if (newData[i].pools.length === 0) continue;
+        newData[i] = {
+          ...newData[i],
+          teams: newData[i].teams.map(t => {
+            if (t.isHost && !t.isBye && t.poolId !== null && !lockedHostAssignments.has(t.poolId)) {
+              return { ...t, isHost: false };
+            }
+            return t;
+          })
+        };
+      }
+
+      // Kør distributeHostsOnly for alle relevante rækker
+      for (let i = 0; i < newData.length; i++) {
+        if (scope === 'active' && newData[i].id !== activeRowId) continue;
+        if (newData[i].pools.length === 0) continue;
+        newData[i] = distributeHostsOnly(newData[i], criteria, newData, previousTournaments, lockedHostAssignments);
+      }
+
+      // Fyld puljer med oversidder-pladser så skabelon og baneantal kan beregnes
+      for (let i = 0; i < newData.length; i++) {
+        if (scope === 'active' && newData[i].id !== activeRowId) continue;
+        if (newData[i].pools.length === 0) continue;
+        newData[i] = fillPoolsWithByes(newData[i]);
+      }
+
+      // Evaluer konflikter
+      const rowsToCheck = scope === 'active'
+        ? newData.filter(r => r.id === activeRowId && r.teams.length > 0 && r.pools.length > 0)
+        : newData.filter(r => r.teams.length > 0 && r.pools.length > 0);
+      const conflicts = collectAllConflicts(rowsToCheck, newData);
+      const unresolvedCount = conflicts.filter(c => !c.resolved).length;
+
+      if (unresolvedCount === 0) {
+        // Perfekt — ingen konflikter
+        return { data: newData, conflicts: [], attempts: usedAttempts, maxGuestDriveTimes: computeMaxGuestDriveTimes(newData, scope) };
+      }
+
+      if (unresolvedCount < bestConflictCount) {
+        bestData = newData;
+        bestConflictCount = unresolvedCount;
+        bestConflicts = conflicts.filter(c => !c.resolved);
+      }
+
+      // Progressiv låsning: lås pools UDEN konflikter
+      const conflictPoolIds = new Set(conflicts.filter(c => !c.resolved).map(c => c.poolId));
+      let newLocks = 0;
+      newData.forEach(r => {
+        if (scope === 'active' && r.id !== activeRowId) return;
+        r.pools.forEach(pool => {
+          if (lockedHostAssignments.has(pool.id)) return;
+          if (conflictPoolIds.has(pool.id)) return;
+          const hostTeam = r.teams.find(t => t.poolId === pool.id && t.isHost && !t.isBye);
+          if (hostTeam) {
+            lockedHostAssignments.set(pool.id, hostTeam.id);
+            newLocks++;
+          }
+        });
+      });
+
+      // Hvis ingen nye locks og vi allerede har prøvet nok, stop tidligt
+      if (newLocks === 0 && attempt > 10) break;
+    }
+
+    return {
+      data: bestData || inputData,
+      conflicts: bestConflicts,
+      attempts: usedAttempts,
+      maxGuestDriveTimes: computeMaxGuestDriveTimes(bestData || inputData, scope)
+    };
+  };
+
+  // Beregn max gæste-kørselstid per række (til visning i validation modal)
+  const computeMaxGuestDriveTimes = (rowData, scope) => {
+    const result = {};
+    rowData.forEach(r => {
+      if (scope === 'active' && r.id !== activeRowId) return;
+      if (r.pools.length === 0) return;
+      let maxTime = 0;
+      r.pools.forEach(pool => {
+        const poolTeams = r.teams.filter(t => t.poolId === pool.id && !t.isBye);
+        const host = poolTeams.find(t => t.isHost);
+        if (!host) return;
+        poolTeams.forEach(t => {
+          if (t.id === host.id) return;
+          const dt = getDriveTimeToHost(t.club, host.club);
+          if (dt !== Infinity && dt > maxTime) maxTime = dt;
+        });
+      });
+      if (maxTime > 0) result[r.id] = maxTime;
+    });
+    return result;
   };
 
   // Ren beregningsfunktion — returnerer nyt data-array uden at sætte state
@@ -3820,15 +4395,39 @@ export default function App() {
         dataWithPools[i] = currentRow;
       }
 
-      // Hvis mode er 'hostsOnly', kør kun værtsklub-fordeling
+      // Hvis mode er 'hostsOnly', kør smart værtsklub-fordeling med progressiv låsning
       if (mode === 'hostsOnly') {
-        let newData = [...dataWithPools];
-        for (let i = 0; i < newData.length; i++) {
-          if (scope === 'active' && newData[i].id !== activeRowId) continue;
-          if (newData[i].pools.length === 0) continue;
-          newData[i] = distributeHostsOnly(newData[i], criteria, newData, previousTournaments);
+        const result = smartDistributeHosts(dataWithPools, scope);
+        setSmartDistributeResult(result);
+        setTimeout(() => setValidationModal({ isOpen: true, scope }), 50);
+        return result.data;
+      }
+
+      // Hvis mode er 'remaining', kør distribution direkte på dataWithPools
+      if (mode === 'remaining') {
+        // Pre-check: tjek om alle puljer har værter
+        const preCheckIssues = [];
+        const rowsForCheck = scope === 'active' ? dataWithPools.filter(r => r.id === activeRowId) : dataWithPools.filter(r => r.teams.length > 0 && r.pools.length > 0);
+        rowsForCheck.forEach(row => {
+          if (row.pools.length === 0) {
+            preCheckIssues.push({ rowName: row.name, type: 'NO_POOLS', message: `${row.name}: Ingen puljer oprettet` });
+            return;
+          }
+          row.pools.forEach(pool => {
+            if (pool.isLocked) return;
+            if ((pool.hostMode || 'host') === 'organizer') return;
+            const hasHost = row.teams.some(t => t.poolId === pool.id && t.isHost && !t.isBye);
+            if (!hasHost) preCheckIssues.push({ rowName: row.name, poolName: pool.name, type: 'MISSING_HOST', message: `${row.name} → ${pool.name}: Mangler værtsklub` });
+          });
+        });
+        if (preCheckIssues.length > 0) {
+          setTimeout(() => setHostCheckModal({ isOpen: true, issues: preCheckIssues }), 50);
+          return dataWithPools;
         }
-        return newData;
+        const result = computeDistributeRemaining(dataWithPools, scope);
+        setSmartDistributeResult(result);
+        setTimeout(() => setValidationModal({ isOpen: true, scope }), 50);
+        return result.data;
       }
 
       // Derefter: retry-randomisering (op til 3 forsøg)
@@ -3848,7 +4447,7 @@ export default function App() {
       return bestData || dataWithPools;
     });
     setCreatePoolsPrompt({ isOpen: false, count: 1, scope: null, mode: 'randomize' });
-    if (mode !== 'hostsOnly') setValidationModal({ isOpen: true, scope });
+    if (mode !== 'hostsOnly' && mode !== 'remaining') setValidationModal({ isOpen: true, scope });
   };
 
   const handleRandomizeClick = (scope) => {
@@ -3877,15 +4476,270 @@ export default function App() {
       setCreatePoolsPrompt({ isOpen: true, count: Math.max(1, suggestedCount), scope, mode: 'hostsOnly' });
       return;
     }
-    setData(prevData => {
-      let newData = [...prevData];
-      for (let i = 0; i < newData.length; i++) {
-        if (scope === 'active' && newData[i].id !== activeRowId) continue;
-        if (newData[i].pools.length === 0) continue;
-        newData[i] = distributeHostsOnly(newData[i], criteria, newData, previousTournaments);
+    // Vis procesvindue, kør beregning asynkront så UI opdateres
+    setProcessingModal({ isOpen: true, message: 'Fordeler værter...', attempts: 0, maxAttempts: 500 });
+    setTimeout(() => {
+      setData(prevData => {
+        const result = smartDistributeHosts(prevData, scope);
+        setSmartDistributeResult(result);
+        setProcessingModal(prev => ({ ...prev, attempts: result.attempts }));
+        return result.data;
+      });
+      setProcessingModal({ isOpen: false, message: '', attempts: 0, maxAttempts: 0 });
+      setValidationModal({ isOpen: true, scope });
+    }, 50);
+  };
+
+  // --- Pre-check: er alle puljer udstyret med værtsklub? ---
+  const checkAllHostsAssigned = (scope) => {
+    const rowsToCheck = scope === 'active' ? data.filter(r => r.id === activeRowId) : data.filter(r => r.teams.length > 0 && r.pools.length > 0);
+    const issues = [];
+
+    rowsToCheck.forEach(row => {
+      if (row.pools.length === 0) {
+        issues.push({ rowName: row.name, type: 'NO_POOLS', message: `${row.name}: Ingen puljer oprettet` });
+        return;
       }
-      return newData;
+      row.pools.forEach(pool => {
+        if (pool.isLocked) return;
+        if ((pool.hostMode || 'host') === 'organizer') return;
+        const hasHost = row.teams.some(t => t.poolId === pool.id && t.isHost && !t.isBye);
+        if (!hasHost) {
+          issues.push({ rowName: row.name, poolName: pool.name, type: 'MISSING_HOST', message: `${row.name} → ${pool.name}: Mangler værtsklub` });
+        }
+      });
     });
+
+    return issues;
+  };
+
+  // --- Flyt konflikt-hold til ikke-fordelte efter 20 forsøg ---
+  const removeConflictTeamsFromPools = (row, allData) => {
+    const conflicts = collectAllConflicts([row], allData);
+    const unresolved = conflicts.filter(c => !c.resolved);
+    if (unresolved.length === 0) return row;
+
+    let newTeams = row.teams.map(t => ({ ...t }));
+    const movedIds = new Set();
+
+    unresolved.forEach(conflict => {
+      if (conflict.type === 'CLUB_CONFLICT' && conflict.clubs) {
+        // Flyt sidst-tilføjede ikke-vært, ikke-pinnede hold fra dublet-klubben
+        const dupes = newTeams.filter(t => t.poolId === conflict.poolId && !t.isBye && !t.isHost && !t.isPinned && conflict.clubs.includes(t.club) && !movedIds.has(t.id));
+        if (dupes.length > 0) {
+          const toMove = dupes[dupes.length - 1];
+          const idx = newTeams.findIndex(t => t.id === toMove.id);
+          newTeams[idx] = { ...newTeams[idx], poolId: null };
+          movedIds.add(toMove.id);
+        }
+      } else if (conflict.type === 'AVOID_CLUB_VIOLATION' && conflict.enemyTeams) {
+        conflict.enemyTeams.forEach(enemy => {
+          if (movedIds.has(enemy.id)) return;
+          const idx = newTeams.findIndex(t => t.id === enemy.id && !t.isHost && !t.isPinned);
+          if (idx !== -1) {
+            newTeams[idx] = { ...newTeams[idx], poolId: null };
+            movedIds.add(enemy.id);
+          }
+        });
+      } else if (conflict.type === 'BANE_CAPACITY_CONFLICT') {
+        // Flyt sidst-tilføjede ikke-vært hold fra puljen
+        const poolTeams = newTeams.filter(t => t.poolId === conflict.poolId && !t.isBye && !t.isHost && !t.isPinned && !movedIds.has(t.id));
+        if (poolTeams.length > 0) {
+          const toMove = poolTeams[poolTeams.length - 1];
+          const idx = newTeams.findIndex(t => t.id === toMove.id);
+          newTeams[idx] = { ...newTeams[idx], poolId: null };
+          movedIds.add(toMove.id);
+        }
+      }
+    });
+
+    // Rens oversiddere og genberegn
+    newTeams = newTeams.filter(t => !(t.isBye && t.name === 'Oversidder'));
+    row.pools.forEach(pool => {
+      const realTeamsInPool = newTeams.filter(t => t.poolId === pool.id && !t.isBye).length;
+      const minPoolSize = row.name.includes('3:3') ? 3 : 4;
+      if (realTeamsInPool > 0 && realTeamsInPool < minPoolSize) {
+        const byesToAdd = minPoolSize - realTeamsInPool;
+        for (let b = 0; b < byesToAdd; b++) {
+          newTeams.push({
+            id: `bye_${Date.now()}_${Math.random()}_${pool.id}_${b}`,
+            name: 'Oversidder', poolId: pool.id,
+            club: `Oversidder_System_${Date.now()}_${b}`,
+            isHost: false, isBye: true, isPinned: false, fodaKey: null
+          });
+        }
+      }
+    });
+
+    const is3v3 = row.name.includes('3:3');
+    return recalculateAllRowKeys({ ...row, teams: newTeams }, criteria, is3v3 ? defaultTemplates3v3 : defaultTemplates, is3v3 ? customHostKeys3v3 : customHostKeys, is3v3 ? defaultTemplates : defaultTemplates3v3, is3v3 ? customHostKeys : customHostKeys3v3);
+  };
+
+  // --- Ren beregning: fordel øvrige hold med op til 20 forsøg per række (tager data som input) ---
+  const computeDistributeRemaining = (inputData, scope, resetNonHosts = false) => {
+    const MAX_ATTEMPTS = 500;
+    const TIME_LIMIT = 5000; // 5 sekunder
+    const startTime = Date.now();
+
+    let workingData = inputData.map(r => ({
+      ...r,
+      teams: r.teams.map(t => ({ ...t })),
+      pools: r.pools.map(p => ({ ...p }))
+    }));
+
+    // Hvis resetNonHosts: flyt alle ikke-vært, ikke-pinnede hold til unassigned
+    if (resetNonHosts) {
+      workingData = workingData.map(row => {
+        if (scope === 'active' && row.id !== activeRowId) return row;
+        return {
+          ...row,
+          teams: row.teams.map(t => {
+            if (t.poolId !== null && !t.isHost && !t.isBye && !t.isPinned) {
+              return { ...t, poolId: null };
+            }
+            return t;
+          }).filter(t => !(t.isBye && t.name === 'Oversidder'))
+        };
+      });
+    }
+
+    const rowsToProcess = scope === 'active'
+      ? workingData.filter(r => r.id === activeRowId && r.pools.length > 0)
+      : workingData.filter(r => r.teams.length > 0 && r.pools.length > 0);
+
+    let totalAttempts = 0;
+
+    rowsToProcess.forEach(row => {
+      let bestRowResult = null;
+      let bestRowConflictCount = Infinity;
+      let rowAttempts = 0;
+
+      for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+        // Tidsbegrænsning (delt på tværs af alle rækker)
+        if (Date.now() - startTime > TIME_LIMIT) break;
+
+        rowAttempts = attempt + 1;
+        const candidateRow = distributeRemainingTeams(row, criteria, workingData);
+        const conflicts = collectAllConflicts([candidateRow], workingData);
+        const unresolvedCount = conflicts.filter(c => !c.resolved).length;
+
+        if (unresolvedCount === 0) {
+          bestRowResult = candidateRow;
+          bestRowConflictCount = 0;
+          break;
+        }
+        if (unresolvedCount < bestRowConflictCount) {
+          bestRowResult = candidateRow;
+          bestRowConflictCount = unresolvedCount;
+        }
+      }
+
+      totalAttempts = Math.max(totalAttempts, rowAttempts);
+
+      // Efter max forsøg: flyt konflikt-hold til unassigned
+      if (bestRowConflictCount > 0 && bestRowResult) {
+        bestRowResult = removeConflictTeamsFromPools(bestRowResult, workingData);
+      }
+
+      // Opdater workingData
+      const idx = workingData.findIndex(r => r.id === row.id);
+      if (idx !== -1) workingData[idx] = bestRowResult || row;
+    });
+
+    const finalConflicts = collectAllConflicts(
+      scope === 'active' ? workingData.filter(r => r.id === activeRowId) : workingData.filter(r => r.teams.length > 0 && r.pools.length > 0),
+      workingData
+    ).filter(c => !c.resolved);
+
+    return {
+      data: workingData,
+      conflicts: finalConflicts,
+      attempts: totalAttempts,
+      maxGuestDriveTimes: computeMaxGuestDriveTimes(workingData, scope)
+    };
+  };
+
+  // --- Click-wrapper: pre-check + sæt state ---
+  const executeDistributeRemainingWithRetry = (scope, resetNonHosts = false) => {
+    // Pre-check på nuværende data
+    const issues = checkAllHostsAssigned(scope);
+    if (issues.length > 0) {
+      setHostCheckModal({ isOpen: true, issues });
+      return;
+    }
+
+    // Vis procesvindue, kør beregning asynkront
+    setProcessingModal({ isOpen: true, message: 'Fordeler øvrige hold...', attempts: 0, maxAttempts: 500 });
+    setTimeout(() => {
+      setData(prevData => {
+        const result = computeDistributeRemaining(prevData, scope, resetNonHosts);
+        setSmartDistributeResult(result);
+        return result.data;
+      });
+      setProcessingModal({ isOpen: false, message: '', attempts: 0, maxAttempts: 0 });
+      setValidationModal({ isOpen: true, scope });
+    }, 50);
+  };
+
+  // --- Click handler for "Fordel øvrige" knappen ---
+  const handleDistributeRemaining = (scope) => {
+    const rowsToCheck = scope === 'active' ? [activeRow] : data.filter(r => r.teams.length > 0);
+    const hasPools = rowsToCheck.some(r => r.pools.length > 0);
+
+    if (!hasPools) {
+      const suggestedCount = getOptimalPoolConfig(activeRow.teams.filter(t => !t.isBye).length).poolCount;
+      setCreatePoolsPrompt({ isOpen: true, count: Math.max(1, suggestedCount), scope, mode: 'remaining' });
+      return;
+    }
+
+    // Tjek om der allerede er ikke-vært hold i puljer
+    const hasNonHostAssigned = rowsToCheck.some(r =>
+      r.teams.some(t => t.poolId !== null && !t.isHost && !t.isBye && !t.isPinned)
+    );
+
+    if (hasNonHostAssigned) {
+      setReshufflePrompt({ isOpen: true, scope, mode: 'remaining' });
+      return;
+    }
+
+    executeDistributeRemainingWithRetry(scope);
+  };
+
+  // --- Kombineret "Fordel ALT" — kører værter + øvrige for alle rækker ---
+  const handleDistributeAll = () => {
+    setProcessingModal({ isOpen: true, message: 'Fordeler alt — værter og hold...', attempts: 0, maxAttempts: 500 });
+    setTimeout(() => {
+      setData(prevData => {
+        let workingData = JSON.parse(JSON.stringify(prevData));
+
+        // Trin 1: Auto-opret puljer for rækker der mangler dem
+        workingData.forEach(row => {
+          if (row.teams.length > 0 && row.pools.length === 0) {
+            const realTeams = row.teams.filter(t => !t.isBye).length;
+            const poolCount = Math.max(1, getOptimalPoolConfig(realTeams).poolCount);
+            row.pools = Array.from({ length: poolCount }).map((_, idx) => ({
+              id: `p${Date.now()}_${row.id}_${idx}`,
+              name: `Pulje ${idx + 1}`,
+              specificCriteria: { ...defaultSpecificCriteria },
+              hostMode: 'host', organizerClub: null, formatOverride: null, isLocked: false
+            }));
+            row.columnOrder = ['unassigned', ...row.pools.map(p => p.id)];
+          }
+        });
+
+        // Trin 2: Fordel værter (alle rækker)
+        const hostResult = smartDistributeHosts(workingData, 'all');
+        workingData = hostResult.data;
+
+        // Trin 3: Fordel øvrige hold (alle rækker, nulstil ikke-værter)
+        const remainingResult = computeDistributeRemaining(workingData, 'all', true);
+
+        setSmartDistributeResult(remainingResult);
+        return remainingResult.data;
+      });
+      setProcessingModal({ isOpen: false, message: '', attempts: 0, maxAttempts: 0 });
+      setValidationModal({ isOpen: true, scope: 'all' });
+    }, 50);
   };
 
   const handleGuideDragStart = (e) => {
@@ -4378,7 +5232,7 @@ export default function App() {
     <div className="flex-1 overflow-auto p-8 bg-gray-50 flex flex-col items-center">
       <div className="max-w-3xl w-full bg-white rounded-xl shadow-sm border border-gray-200 p-8">
         <div className="flex items-center gap-3 mb-6">
-          <Settings className="w-8 h-8 text-green-600" />
+          <Settings className="w-8 h-8 text-[#c90b0e]" />
           <h2 className="text-2xl font-bold text-gray-800">Generelle Kriterier</h2>
         </div>
         <p className="text-gray-600 mb-8 border-b border-gray-100 pb-6">
@@ -4386,8 +5240,8 @@ export default function App() {
         </p>
 
         <div className="space-y-4">
-          <label className={`flex items-start gap-4 p-4 rounded-xl border-2 transition-all cursor-pointer ${criteria.avoidSameClub ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-300'}`}>
-            <div className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 mt-0.5 ${criteria.avoidSameClub ? 'bg-green-600' : 'bg-gray-200'}`}>
+          <label className={`flex items-start gap-4 p-4 rounded-xl border-2 transition-all cursor-pointer ${criteria.avoidSameClub ? 'border-[#c90b0e] bg-red-50' : 'border-gray-200 hover:border-red-300'}`}>
+            <div className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 mt-0.5 ${criteria.avoidSameClub ? 'bg-[#c90b0e]' : 'bg-gray-200'}`}>
               {criteria.avoidSameClub && <Check className="w-4 h-4 text-white" />}
             </div>
             <div>
@@ -4399,21 +5253,8 @@ export default function App() {
             <input type="checkbox" className="hidden" checked={criteria.avoidSameClub} onChange={(e) => setCriteria({...criteria, avoidSameClub: e.target.checked})} />
           </label>
 
-          <label className={`flex items-start gap-4 p-4 rounded-xl border-2 transition-all cursor-pointer ${criteria.autoAssignHost ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-300'}`}>
-            <div className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 mt-0.5 ${criteria.autoAssignHost ? 'bg-green-600' : 'bg-gray-200'}`}>
-              {criteria.autoAssignHost && <Check className="w-4 h-4 text-white" />}
-            </div>
-            <div>
-              <div className="font-bold text-gray-800 flex items-center gap-2"><UserCheck className="w-5 h-5 text-purple-500" /> Vælg vært automatisk</div>
-              <div className="text-sm text-gray-500 mt-1">
-                Programmet vælger selv hvilken klub der skal være vært for hver pulje — så du ikke behøver at gøre det manuelt.
-              </div>
-            </div>
-            <input type="checkbox" className="hidden" checked={criteria.autoAssignHost} onChange={(e) => setCriteria({...criteria, autoAssignHost: e.target.checked})} />
-          </label>
-
-          <label className={`flex items-start gap-4 p-4 rounded-xl border-2 transition-all cursor-pointer ${criteria.hostGetsMostMatches ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-300'}`}>
-            <div className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 mt-0.5 ${criteria.hostGetsMostMatches ? 'bg-green-600' : 'bg-gray-200'}`}>
+          <label className={`flex items-start gap-4 p-4 rounded-xl border-2 transition-all cursor-pointer ${criteria.hostGetsMostMatches ? 'border-[#c90b0e] bg-red-50' : 'border-gray-200 hover:border-red-300'}`}>
+            <div className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 mt-0.5 ${criteria.hostGetsMostMatches ? 'bg-[#c90b0e]' : 'bg-gray-200'}`}>
               {criteria.hostGetsMostMatches && <Check className="w-4 h-4 text-white" />}
             </div>
             <div>
@@ -4432,8 +5273,8 @@ export default function App() {
             }} />
           </label>
 
-          <label className={`flex items-start gap-4 p-4 rounded-xl border-2 transition-all cursor-pointer ${criteria.checkBaneCapacity ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-300'}`}>
-            <div className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 mt-0.5 ${criteria.checkBaneCapacity ? 'bg-green-600' : 'bg-gray-200'}`}>
+          <label className={`flex items-start gap-4 p-4 rounded-xl border-2 transition-all cursor-pointer ${criteria.checkBaneCapacity ? 'border-[#c90b0e] bg-red-50' : 'border-gray-200 hover:border-red-300'}`}>
+            <div className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 mt-0.5 ${criteria.checkBaneCapacity ? 'bg-[#c90b0e]' : 'bg-gray-200'}`}>
               {criteria.checkBaneCapacity && <Check className="w-4 h-4 text-white" />}
             </div>
             <div>
@@ -4445,12 +5286,12 @@ export default function App() {
             <input type="checkbox" className="hidden" checked={criteria.checkBaneCapacity} onChange={(e) => setCriteria({...criteria, checkBaneCapacity: e.target.checked})} />
           </label>
 
-          <label className={`flex items-start gap-4 p-4 rounded-xl border-2 transition-all cursor-pointer ${criteria.preferGeographicProximity ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-300'}`}>
-            <div className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 mt-0.5 ${criteria.preferGeographicProximity ? 'bg-green-600' : 'bg-gray-200'}`}>
+          <label className={`flex items-start gap-4 p-4 rounded-xl border-2 transition-all cursor-pointer ${criteria.preferGeographicProximity ? 'border-[#c90b0e] bg-red-50' : 'border-gray-200 hover:border-red-300'}`}>
+            <div className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 mt-0.5 ${criteria.preferGeographicProximity ? 'bg-[#c90b0e]' : 'bg-gray-200'}`}>
               {criteria.preferGeographicProximity && <Check className="w-4 h-4 text-white" />}
             </div>
             <div>
-              <div className="font-bold text-gray-800 flex items-center gap-2"><MapPin className="w-5 h-5 text-green-500" /> Saml hold der ligger tæt på hinanden</div>
+              <div className="font-bold text-gray-800 flex items-center gap-2"><MapPin className="w-5 h-5 text-[#c90b0e]" /> Saml hold der ligger tæt på hinanden</div>
               <div className="text-sm text-gray-500 mt-1">
                 Når der er flere puljer i en række, prøver programmet at samle de hold der ligger tæt på hinanden — så familierne ikke skal køre unødvendigt langt.
               </div>
@@ -4496,7 +5337,7 @@ export default function App() {
                 </div>
 
                 <label className="flex items-center gap-3 flex-1 cursor-pointer min-w-0">
-                  <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 ${isEnabled ? 'bg-green-600' : 'bg-gray-300'}`}>
+                  <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 ${isEnabled ? 'bg-[#c90b0e]' : 'bg-gray-300'}`}>
                     {isEnabled && <Check className="w-3.5 h-3.5 text-white" />}
                   </div>
                   <Icon className={`w-5 h-5 flex-shrink-0 ${meta.color}`} />
@@ -4538,7 +5379,7 @@ export default function App() {
         {/* Header & Upload */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-xl shadow-sm border border-gray-200 gap-4">
           <div className="flex items-center gap-3">
-            <Wand2 className="w-8 h-8 text-pink-600" />
+            <Wand2 className="w-8 h-8 text-[#c90b0e]" />
             <div>
               <h2 className="text-2xl md:text-3xl font-bold text-gray-800">Klubbernes Ønsker</h2>
               <p className="text-gray-500 mt-1 text-sm">Her kan du se og rette klubbernes ønsker. Ønsker der er markeret som "aktive" har forrang over de generelle regler.</p>
@@ -4546,7 +5387,7 @@ export default function App() {
           </div>
 
           <Tip text="Indlæs en fil med klubbernes ønsker (CSV eller Excel)" position="bottom">
-          <label className="flex items-center gap-2 bg-pink-600 hover:bg-pink-700 text-white px-4 py-2.5 rounded-lg cursor-pointer transition-colors shadow-sm font-bold text-sm">
+          <label className="flex items-center gap-2 bg-[#c90b0e] hover:bg-[#9c0f06] text-white px-4 py-2.5 rounded-lg cursor-pointer transition-colors shadow-sm font-bold text-sm">
             <Upload size={18} />
             <span>Indlæs ønskefil</span>
             <input
@@ -4558,6 +5399,17 @@ export default function App() {
             />
           </label>
           </Tip>
+          {wishes.length > 0 && (
+            <Tip text="Fjern alle ønsker fra listen" position="bottom">
+              <button
+                onClick={() => { if (window.confirm(`Er du sikker på at du vil slette alle ${wishes.length} ønsker?`)) setWishes([]); }}
+                className="flex items-center gap-2 bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2.5 rounded-lg transition-colors font-bold text-sm border border-red-300"
+              >
+                <Trash2 size={18} />
+                <span>Slet alle ønsker</span>
+              </button>
+            </Tip>
+          )}
         </div>
 
         {/* Stats / Dashboard */}
@@ -4572,7 +5424,7 @@ export default function App() {
             </div>
           </div>
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
-            <div className="bg-green-100 p-3 rounded-lg text-green-600">
+            <div className="bg-red-100 p-3 rounded-lg text-[#c90b0e]">
               <Users size={24} />
             </div>
             <div>
@@ -4613,7 +5465,7 @@ export default function App() {
           </Tip>
 
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
-            <div className="bg-pink-100 p-3 rounded-lg text-pink-600">
+            <div className="bg-red-100 p-3 rounded-lg text-[#c90b0e]">
               <Check size={24} />
             </div>
             <div>
@@ -4630,7 +5482,7 @@ export default function App() {
             <input
               type="text"
               placeholder="Søg på klub eller ønske..."
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none transition-all text-sm font-medium"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c90b0e] focus:border-[#c90b0e] outline-none transition-all text-sm font-medium"
               value={wishesSearchTerm}
               onChange={(e) => setWishesSearchTerm(e.target.value)}
             />
@@ -4640,7 +5492,7 @@ export default function App() {
             <div>
               <label className="block text-[10px] font-bold text-gray-500 mb-1.5 uppercase">Regel Type</label>
               <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none appearance-none bg-white text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c90b0e] outline-none appearance-none bg-white text-sm"
                 value={wishesFilterRegel}
                 onChange={(e) => setWishesFilterRegel(e.target.value)}
               >
@@ -4651,7 +5503,7 @@ export default function App() {
             <div>
               <label className="block text-[10px] font-bold text-gray-500 mb-1.5 uppercase">Dato / Kategori</label>
               <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none appearance-none bg-white text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c90b0e] outline-none appearance-none bg-white text-sm"
                 value={wishesFilterCategory}
                 onChange={(e) => setWishesFilterCategory(e.target.value)}
               >
@@ -4662,7 +5514,7 @@ export default function App() {
             <div>
               <label className="block text-[10px] font-bold text-gray-500 mb-1.5 uppercase">Årgang</label>
               <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none appearance-none bg-white text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c90b0e] outline-none appearance-none bg-white text-sm"
                 value={wishesFilterArgang}
                 onChange={(e) => setWishesFilterArgang(e.target.value)}
               >
@@ -4673,7 +5525,7 @@ export default function App() {
             <div>
               <label className="block text-[10px] font-bold text-gray-500 mb-1.5 uppercase">Køn</label>
               <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none appearance-none bg-white text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c90b0e] outline-none appearance-none bg-white text-sm"
                 value={wishesFilterKoen}
                 onChange={(e) => setWishesFilterKoen(e.target.value)}
               >
@@ -4684,7 +5536,7 @@ export default function App() {
             <div>
               <label className="block text-[10px] font-bold text-gray-500 mb-1.5 uppercase">Niveau</label>
               <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none appearance-none bg-white text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c90b0e] outline-none appearance-none bg-white text-sm"
                 value={wishesFilterNiveau}
                 onChange={(e) => setWishesFilterNiveau(e.target.value)}
               >
@@ -4767,7 +5619,7 @@ export default function App() {
                               <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-[11px] font-bold text-gray-500">{row.priority || wishIdx + 1}</span>
                            </td>
                            <td className="p-4 text-center">
-                              <input type="checkbox" checked={row.isActive} onChange={() => setWishes(wishes.map(x => x.id === row.id ? {...x, isActive: !x.isActive} : x))} className="w-4 h-4 accent-pink-600 cursor-pointer" title="Deaktiver regel" />
+                              <input type="checkbox" checked={row.isActive} onChange={() => setWishes(wishes.map(x => x.id === row.id ? {...x, isActive: !x.isActive} : x))} className="w-4 h-4 accent-[#c90b0e] cursor-pointer" title="Deaktiver regel" />
                            </td>
                            <td className="p-3">
                              <select
@@ -4844,7 +5696,7 @@ export default function App() {
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center p-5 border-b border-gray-100 bg-gray-50">
               <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                <Edit2 size={20} className="text-pink-600" />
+                <Edit2 size={20} className="text-[#c90b0e]" />
                 Rediger ønske
               </h3>
               <button onClick={() => setEditingWish(null)} className="text-gray-400 hover:text-gray-600 transition-colors p-1">
@@ -4855,17 +5707,17 @@ export default function App() {
             <div className="p-6 overflow-y-auto space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-600 mb-1">Klubnavn</label>
-                <input type="text" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm" value={editingWish.club || ''} onChange={e => setEditingWish({...editingWish, club: e.target.value})} placeholder="f.eks. OB" />
+                <input type="text" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c90b0e] outline-none transition-all text-sm" value={editingWish.club || ''} onChange={e => setEditingWish({...editingWish, club: e.target.value})} placeholder="f.eks. OB" />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-600 mb-1">Årgang</label>
-                  <input type="text" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm" value={editingWish.age || ''} onChange={e => setEditingWish({...editingWish, age: e.target.value})} placeholder="f.eks. U10 eller Generelt" />
+                  <input type="text" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c90b0e] outline-none transition-all text-sm" value={editingWish.age || ''} onChange={e => setEditingWish({...editingWish, age: e.target.value})} placeholder="f.eks. U10 eller Generelt" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-600 mb-1">Køn</label>
-                  <select className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm" value={editingWish.koen || 'Ikke angivet'} onChange={e => setEditingWish({...editingWish, koen: e.target.value})}>
+                  <select className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c90b0e] outline-none transition-all text-sm" value={editingWish.koen || 'Ikke angivet'} onChange={e => setEditingWish({...editingWish, koen: e.target.value})}>
                     <option value="Ikke angivet">Ikke angivet</option>
                     <option value="Drenge">Drenge</option>
                     <option value="Piger">Piger</option>
@@ -4877,7 +5729,7 @@ export default function App() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-600 mb-1">Regeltype</label>
-                  <select className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-bold ${
+                  <select className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#c90b0e] outline-none transition-all text-sm font-bold ${
                     editingWish.ruleType === 'UNKNOWN' ? 'bg-amber-50 border-amber-300 text-amber-800' :
                     editingWish.ruleType === 'FORCE_HOST' ? 'bg-green-50 border-green-300 text-green-800' :
                     editingWish.ruleType === 'AVOID_HOST' ? 'bg-red-50 border-red-300 text-red-800' :
@@ -4899,7 +5751,7 @@ export default function App() {
                             const updated = e.target.checked ? [...current, n] : current.filter(x => x !== n);
                             setEditingWish({...editingWish, niveauer: updated.length ? updated : ['Ikke angivet']});
                           }}
-                          className="w-3.5 h-3.5 accent-pink-600 cursor-pointer"
+                          className="w-3.5 h-3.5 accent-[#c90b0e] cursor-pointer"
                         />
                         {n}
                       </label>
@@ -4910,16 +5762,16 @@ export default function App() {
 
               <div>
                 <label className="block text-xs font-bold text-gray-600 mb-1">Ønske-tekst</label>
-                <textarea className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none transition-all resize-none h-24 text-sm" value={editingWish.text || ''} onChange={e => setEditingWish({...editingWish, text: e.target.value})} placeholder="Beskriv ønsket..." />
+                <textarea className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c90b0e] outline-none transition-all resize-none h-24 text-sm" value={editingWish.text || ''} onChange={e => setEditingWish({...editingWish, text: e.target.value})} placeholder="Beskriv ønsket..." />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-gray-600 mb-1">Kontaktperson</label>
-                <input type="text" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm" value={editingWish.contact || ''} onChange={e => setEditingWish({...editingWish, contact: e.target.value})} placeholder="Navn, email, tlf..." />
+                <input type="text" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c90b0e] outline-none transition-all text-sm" value={editingWish.contact || ''} onChange={e => setEditingWish({...editingWish, contact: e.target.value})} placeholder="Navn, email, tlf..." />
               </div>
 
               <div className="flex items-center gap-2">
-                <input type="checkbox" checked={editingWish.isActive} onChange={() => setEditingWish({...editingWish, isActive: !editingWish.isActive})} className="w-4 h-4 accent-pink-600 cursor-pointer" />
+                <input type="checkbox" checked={editingWish.isActive} onChange={() => setEditingWish({...editingWish, isActive: !editingWish.isActive})} className="w-4 h-4 accent-[#c90b0e] cursor-pointer" />
                 <label className="text-sm font-bold text-gray-700">Aktiv regel</label>
               </div>
 
@@ -4927,7 +5779,7 @@ export default function App() {
                 <button type="button" onClick={() => setEditingWish(null)} className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-bold transition-colors text-sm">
                   Annuller
                 </button>
-                <button type="button" onClick={() => { setWishes(wishes.map(w => w.id === editingWish.id ? editingWish : w)); setEditingWish(null); }} className="flex-1 px-4 py-2.5 bg-pink-600 hover:bg-pink-700 text-white rounded-lg font-bold transition-colors shadow-sm text-sm">
+                <button type="button" onClick={() => { setWishes(wishes.map(w => w.id === editingWish.id ? editingWish : w)); setEditingWish(null); }} className="flex-1 px-4 py-2.5 bg-[#c90b0e] hover:bg-[#9c0f06] text-white rounded-lg font-bold transition-colors shadow-sm text-sm">
                   Gem ændringer
                 </button>
               </div>
@@ -4990,12 +5842,12 @@ export default function App() {
 
        return (
           <div className="absolute left-8 top-full mt-1 w-64 bg-gray-900 text-white p-3 rounded-lg shadow-xl opacity-0 invisible group-hover/club:opacity-100 group-hover/club:visible transition-all z-[100] text-xs font-normal text-left pointer-events-none">
-             <div className="font-bold text-green-300 mb-2 pb-1 border-b border-gray-700">{club} - {ageGroup} Værtsskaber:</div>
+             <div className="font-bold text-red-300 mb-2 pb-1 border-b border-gray-700">{club} - {ageGroup} Værtsskaber:</div>
              <ul className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
                 {hostings.map((h, i) => (
                    <li key={i} className="flex justify-between items-start gap-2">
                       <span className="truncate flex-1" title={h.rowName}>{h.rowName}</span>
-                      <span className={`flex-shrink-0 whitespace-nowrap ${h.source === 'Nuværende' ? 'text-green-400 font-bold' : 'text-gray-400'}`}>{h.date}</span>
+                      <span className={`flex-shrink-0 whitespace-nowrap ${h.source === 'Nuværende' ? 'text-red-400 font-bold' : 'text-gray-400'}`}>{h.date}</span>
                    </li>
                 ))}
              </ul>
@@ -5028,7 +5880,7 @@ export default function App() {
         <div className="max-w-6xl w-full bg-white rounded-xl shadow-sm border border-gray-200 p-8">
           <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-200">
             <div className="flex items-center gap-3">
-              <MapPin className="w-8 h-8 text-green-600" />
+              <MapPin className="w-8 h-8 text-[#c90b0e]" />
               <div>
                  <h2 className="text-2xl font-bold text-gray-800">Værtsklubber Oversigt</h2>
                  <p className="text-gray-500 text-sm mt-1">Sammenlign nuværende og tidligere værtsklubber. Hold musen over et klubnavn for mere info.</p>
@@ -5095,7 +5947,7 @@ export default function App() {
 
              {/* Højre Tabel: Nuværende stævne */}
              <div className="flex flex-col border border-gray-200 rounded-lg bg-white shadow-sm">
-               <div className="bg-green-600 border-b border-green-700 p-4 flex items-center gap-2 text-white rounded-t-lg">
+               <div className="bg-[#c90b0e] border-b border-red-800 p-4 flex items-center gap-2 text-white rounded-t-lg">
                   <Calendar className="w-5 h-5" />
                   <h3 className="font-bold text-lg">Nuværende stævne (Samlet overblik)</h3>
                </div>
@@ -5107,7 +5959,7 @@ export default function App() {
                   )}
                   {sortedDates.map(date => (
                     <div key={date} className="border-b border-gray-300 last:border-0">
-                       <div className="bg-green-100 px-4 py-2 font-bold text-sm text-green-800 sticky top-0 z-20 border-b border-green-200">
+                       <div className="bg-red-50 px-4 py-2 font-bold text-sm text-[#c90b0e] sticky top-0 z-20 border-b border-red-200">
                          Spilledato: {date}
                        </div>
                        {Object.entries(currentGroupedByDate[date]).sort((a,b) => a[0].localeCompare(b[0])).map(([rowName, clubs]) => (
@@ -5129,7 +5981,7 @@ export default function App() {
                                    <tr key={club} className={`transition-colors ${isConflict ? 'bg-orange-50 hover:bg-orange-100' : 'hover:bg-blue-50'}`}>
                                      <td className={`px-4 py-2.5 font-medium pl-10 flex items-center gap-1.5 relative group/club cursor-help ${isConflict ? 'text-orange-800' : 'text-gray-800'}`}>
                                        <span className="border-b border-dashed border-current">{club}</span>
-                                       {isConflict && <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 text-orange-500" title={`Advarsel: ${club} er vært ${dateClubCounts[date][club]} gange på denne dato!`} />}
+                                       {isConflict && <Tip text={`Advarsel: ${club} er vært ${dateClubCounts[date][club]} gange på denne dato!`} position="right"><AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 text-orange-500" /></Tip>}
                                        {getHostingsTooltip(club, rowName)}
                                      </td>
                                      <td className={`px-4 py-2.5 text-center font-bold ${isConflict ? 'text-orange-700' : 'text-blue-600'}`}>{count}</td>
@@ -5209,7 +6061,7 @@ export default function App() {
               <Tip text="Vis kampmønstre til 3-mod-3 format" position="bottom">
               <button
                 onClick={() => setNøglerFormat('3:3')}
-                className={`px-3 py-1 text-xs font-bold transition-colors ${nøglerFormat === '3:3' ? 'bg-green-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
+                className={`px-3 py-1 text-xs font-bold transition-colors ${nøglerFormat === '3:3' ? 'bg-[#c90b0e] text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
               >
                 3:3
               </button>
@@ -5217,7 +6069,7 @@ export default function App() {
               <Tip text="Vis kampmønstre til 5-mod-5 format" position="bottom">
               <button
                 onClick={() => setNøglerFormat('5:5')}
-                className={`px-3 py-1 text-xs font-bold transition-colors border-l border-gray-300 ${nøglerFormat === '5:5' ? 'bg-green-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
+                className={`px-3 py-1 text-xs font-bold transition-colors border-l border-gray-300 ${nøglerFormat === '5:5' ? 'bg-[#c90b0e] text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
               >
                 5:5
               </button>
@@ -5236,14 +6088,14 @@ export default function App() {
                           <div className="flex items-stretch">
                               <button
                                 onClick={() => activeSetSelected(templateName)}
-                                className={`flex-1 text-left px-3 py-2 rounded-l-lg transition-colors duration-150 text-xs font-medium border border-transparent border-r-0 ${isSelected ? 'bg-green-50 text-green-700 border-green-200' : 'text-gray-600 hover:bg-gray-100 group-hover:border-gray-200'}`}
+                                className={`flex-1 text-left px-3 py-2 rounded-l-lg transition-colors duration-150 text-xs font-medium border border-transparent border-r-0 ${isSelected ? 'bg-red-50 text-[#c90b0e] border-red-200' : 'text-gray-600 hover:bg-gray-100 group-hover:border-gray-200'}`}
                               >
                                 {templateName}
                               </button>
                               <button
                                   onClick={() => activeHandleSetDefault(sizeStr, templateName)}
                                   title={isDefault ? "Dette er standard skabelonen for " + sizeStr + " hold" : "Sæt som standard for " + sizeStr + " hold"}
-                                  className={`px-2 flex items-center justify-center rounded-r-lg transition-colors border ${isDefault ? 'bg-green-100 text-green-700 border-green-200' : 'bg-white text-gray-300 border-transparent group-hover:border-gray-200 hover:bg-gray-50 hover:text-gray-500'}`}
+                                  className={`px-2 flex items-center justify-center rounded-r-lg transition-colors border ${isDefault ? 'bg-red-100 text-[#c90b0e] border-red-200' : 'bg-white text-gray-300 border-transparent group-hover:border-gray-200 hover:bg-gray-50 hover:text-gray-500'}`}
                               >
                                   <Star className={`w-3.5 h-3.5 ${isDefault ? 'fill-current' : ''}`} />
                               </button>
@@ -5261,7 +6113,7 @@ export default function App() {
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full">
               <div className="flex items-center gap-3 mb-6">
-                <Key className="w-8 h-8 text-green-600" />
+                <Key className="w-8 h-8 text-[#c90b0e]" />
                 <h2 className="text-2xl font-bold text-gray-800">Foda Nøgler - {activeSize} hold {is3v3 ? '(3:3)' : '(5:5)'}</h2>
               </div>
               <p className="text-gray-600 mb-6 border-b border-gray-100 pb-6">
@@ -5495,11 +6347,13 @@ export default function App() {
   const allHostAssignments = useMemo(() => {
     const map = {};
     data.forEach(r => {
+      const dateMatch = r.name.match(/(\d{1,2}\/\d{1,2})/);
+      const rDate = dateMatch ? dateMatch[1] : null;
       r.pools.forEach(pool => {
         const host = r.teams.find(t => t.poolId === pool.id && t.isHost && !t.isBye);
         if (host) {
           if (!map[host.club]) map[host.club] = [];
-          map[host.club].push({ rowId: r.id, rowName: r.name, poolId: pool.id, poolName: pool.name });
+          map[host.club].push({ rowId: r.id, rowName: r.name, poolId: pool.id, poolName: pool.name, date: rDate });
         }
       });
     });
@@ -5577,6 +6431,294 @@ export default function App() {
 
   const pdfDatesText = activeDatesForPdf.length > 0 ? `- Spilledatoer: ${activeDatesForPdf.join(', ')}` : '';
 
+  const renderKørselstiderView = () => {
+    const fromMatch = findDriveClub(driveSearchFrom);
+    const toMatch = findDriveClub(driveSearchTo);
+    const time = fromMatch && toMatch ? getDriveTime(driveSearchFrom, driveSearchTo) : null;
+    const dist = fromMatch && toMatch ? getDriveDistance(driveSearchFrom, driveSearchTo) : null;
+
+    // Build filtered list for "from" club
+    const fromResults = driveSearchFrom.length >= 2
+      ? DRIVE_TIME_CLUBS.filter(c => normalizeClubName(c).toLowerCase().includes(driveSearchFrom.toLowerCase())).slice(0, 8)
+      : [];
+    const toResults = driveSearchTo.length >= 2
+      ? DRIVE_TIME_CLUBS.filter(c => normalizeClubName(c).toLowerCase().includes(driveSearchTo.toLowerCase())).slice(0, 8)
+      : [];
+
+    // Build table: from selected club to all others
+    const tableData = fromMatch
+      ? DRIVE_TIME_CLUBS.filter(c => c !== fromMatch).map(c => ({
+          club: c,
+          time: DRIVE_TIME_MATRIX[fromMatch]?.[c] ?? null,
+          dist: DISTANCE_MATRIX[fromMatch]?.[c] ?? null,
+          info: CLUB_INFO[c] || null
+        })).filter(r => r.time !== null).sort((a, b) => a.time - b.time)
+      : [];
+
+    return (
+      <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-2xl font-bold text-gray-800 mb-1 flex items-center gap-2"><Car className="w-6 h-6 text-blue-600" /> Kørselstider & Afstande</h2>
+          <p className="text-gray-500 text-sm mb-6">Slå kørselstid og afstand op mellem {DRIVE_TIME_CLUBS.length} fynske fodboldklubber</p>
+
+          {/* Search section */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-6">
+            <h3 className="font-semibold text-gray-700 mb-4 flex items-center gap-2"><Search className="w-4 h-4" /> Søg kørselstid mellem to klubber</h3>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="relative flex-1 min-w-[200px]">
+                <label className="text-xs font-medium text-gray-500 mb-1 block">Fra klub</label>
+                <input type="text" value={driveSearchFrom} onChange={e => setDriveSearchFrom(e.target.value)} placeholder="Skriv klubnavn..." className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-400 outline-none" />
+                {driveSearchFrom.length >= 2 && !fromMatch && fromResults.length > 0 && (
+                  <div className="absolute z-20 top-full mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {fromResults.map(c => (
+                      <button key={c} onClick={() => setDriveSearchFrom(c)} className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition-colors">{c}</button>
+                    ))}
+                  </div>
+                )}
+                {fromMatch && <div className="text-xs text-green-600 mt-1 flex items-center gap-1"><Check className="w-3 h-3" /> {fromMatch}</div>}
+              </div>
+
+              <div className="flex items-center pt-5"><Navigation className="w-5 h-5 text-gray-400 rotate-90" /></div>
+
+              <div className="relative flex-1 min-w-[200px]">
+                <label className="text-xs font-medium text-gray-500 mb-1 block">Til klub</label>
+                <input type="text" value={driveSearchTo} onChange={e => setDriveSearchTo(e.target.value)} placeholder="Skriv klubnavn..." className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-400 outline-none" />
+                {driveSearchTo.length >= 2 && !toMatch && toResults.length > 0 && (
+                  <div className="absolute z-20 top-full mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {toResults.map(c => (
+                      <button key={c} onClick={() => setDriveSearchTo(c)} className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition-colors">{c}</button>
+                    ))}
+                  </div>
+                )}
+                {toMatch && <div className="text-xs text-green-600 mt-1 flex items-center gap-1"><Check className="w-3 h-3" /> {toMatch}</div>}
+              </div>
+            </div>
+
+            {fromMatch && toMatch && fromMatch !== toMatch && (
+              <div className="mt-4 flex gap-4">
+                <div className="flex-1 bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                  <div className="text-xs text-blue-600 font-medium mb-1">Kørselstid</div>
+                  <div className="text-3xl font-bold text-blue-800">{time != null ? `${time} min` : '—'}</div>
+                </div>
+                <div className="flex-1 bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                  <div className="text-xs text-green-600 font-medium mb-1">Afstand</div>
+                  <div className="text-3xl font-bold text-green-800">{dist != null ? `${dist} km` : '—'}</div>
+                </div>
+              </div>
+            )}
+            {fromMatch && toMatch && fromMatch === toMatch && (
+              <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-700">Det er den samme klub — vælg to forskellige klubber.</div>
+            )}
+          </div>
+
+          {/* Klubnavne-mapping editor */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
+            <button onClick={() => setShowDriveClubMapEditor(prev => !prev)} className="w-full px-5 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors">
+              <h3 className="font-semibold text-gray-700 flex items-center gap-2">
+                <Settings className="w-4 h-4 text-purple-500" /> Klubnavne-mapping
+                {activeClubDriveMappings.some(m => !m.resolved) && (
+                  <span className="ml-2 bg-red-100 text-red-600 text-xs font-bold px-2 py-0.5 rounded-full">{activeClubDriveMappings.filter(m => !m.resolved).length} ukendte</span>
+                )}
+              </h3>
+              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showDriveClubMapEditor ? 'rotate-180' : ''}`} />
+            </button>
+            {showDriveClubMapEditor && (
+              <div className="border-t border-gray-100 p-5">
+                <p className="text-xs text-gray-500 mb-3">Forbind klubnavne fra stævnedata til kørselstidsmatrixen. Ændringer gælder med det samme for alle kørselstidsvisninger.</p>
+
+                {/* Search filter + actions */}
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                    <input type="text" value={driveMapSearchTerm} onChange={e => setDriveMapSearchTerm(e.target.value)} placeholder="Filtrer klubber..." className="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-200 focus:border-purple-400 outline-none" />
+                  </div>
+                  {Object.keys(driveClubMap).length > 0 && (
+                    <button onClick={() => setDriveClubMap({})} className="text-xs text-red-600 hover:text-red-800 px-2 py-1 rounded hover:bg-red-50 whitespace-nowrap">Nulstil tilpasninger</button>
+                  )}
+                </div>
+
+                {/* Mapping table */}
+                {activeClubDriveMappings.length > 0 ? (
+                  <div className="overflow-y-auto max-h-[400px] border border-gray-200 rounded-lg">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 sticky top-0 z-10">
+                        <tr>
+                          <th className="text-left px-3 py-2 font-medium text-gray-600">Stævne-navn</th>
+                          <th className="text-left px-3 py-2 font-medium text-gray-600">Normaliseret</th>
+                          <th className="text-left px-3 py-2 font-medium text-gray-600">Kørselstids-klub</th>
+                          <th className="text-center px-3 py-2 font-medium text-gray-600 w-20">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {activeClubDriveMappings
+                          .filter(m => !driveMapSearchTerm || m.original.toLowerCase().includes(driveMapSearchTerm.toLowerCase()) || (m.resolved || '').toLowerCase().includes(driveMapSearchTerm.toLowerCase()))
+                          .map((m, i) => (
+                          <tr key={m.original} className={`border-t border-gray-100 ${!m.resolved ? 'bg-red-50/50' : m.hasUserMap ? 'bg-purple-50/30' : i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                            <td className="px-3 py-1.5 font-medium text-gray-800">{m.original}</td>
+                            <td className="px-3 py-1.5 text-gray-500 text-xs">{m.normalized !== m.original ? m.normalized : '—'}</td>
+                            <td className="px-3 py-1.5">
+                              <select
+                                value={m.resolved || ''}
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  setDriveClubMap(prev => {
+                                    const next = { ...prev };
+                                    if (!val) {
+                                      delete next[m.original];
+                                      delete next[m.normalized];
+                                    } else {
+                                      next[m.original] = val;
+                                    }
+                                    return next;
+                                  });
+                                }}
+                                className={`w-full border rounded px-2 py-1 text-sm ${!m.resolved ? 'border-red-300 bg-red-50' : 'border-gray-200'} focus:ring-2 focus:ring-purple-200 outline-none`}
+                              >
+                                <option value="">— Vælg klub —</option>
+                                {DRIVE_TIME_CLUBS.map(c => <option key={c} value={c}>{c}{CLUB_INFO[c]?.by ? ` (${CLUB_INFO[c].by})` : ''}</option>)}
+                              </select>
+                            </td>
+                            <td className="px-3 py-1.5 text-center">
+                              {!m.resolved ? (
+                                <span className="text-red-500 text-xs font-medium">✗ Ukendt</span>
+                              ) : m.hasUserMap ? (
+                                <span className="text-purple-600 text-xs font-medium">✎ Tilpasset</span>
+                              ) : m.hasExplicitMap ? (
+                                <span className="text-blue-500 text-xs font-medium">✓ Standard</span>
+                              ) : (
+                                <span className="text-green-500 text-xs font-medium">✓ Auto</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-400 text-sm py-8">Ingen klubber fundet i stævnedata. Importér rækker med hold for at se mappings her.</div>
+                )}
+
+                {/* Add new manual mapping */}
+                <div className="mt-3 flex items-end gap-2">
+                  <div className="flex-1">
+                    <label className="text-xs font-medium text-gray-500 mb-1 block">Nyt stævne-navn</label>
+                    <input type="text" value={driveMapNewName} onChange={e => setDriveMapNewName(e.target.value)} placeholder="F.eks. OB" className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-purple-200 focus:border-purple-400 outline-none" />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-xs font-medium text-gray-500 mb-1 block">Kørselstids-klub</label>
+                    <select value={driveMapNewTarget} onChange={e => setDriveMapNewTarget(e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-purple-200 outline-none">
+                      <option value="">— Vælg —</option>
+                      {DRIVE_TIME_CLUBS.map(c => <option key={c} value={c}>{c}{CLUB_INFO[c]?.by ? ` (${CLUB_INFO[c].by})` : ''}</option>)}
+                    </select>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (driveMapNewName.trim() && driveMapNewTarget) {
+                        setDriveClubMap(prev => ({ ...prev, [driveMapNewName.trim()]: driveMapNewTarget }));
+                        setDriveMapNewName('');
+                        setDriveMapNewTarget('');
+                      }
+                    }}
+                    disabled={!driveMapNewName.trim() || !driveMapNewTarget}
+                    className="px-3 py-1.5 bg-[#c90b0e] text-white rounded-lg text-sm font-medium hover:bg-[#9c0f06] disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+                  >
+                    + Tilføj
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Full drive time matrix button + table */}
+          <div className="mb-6">
+            <button
+              onClick={() => setShowDriveMatrix(!showDriveMatrix)}
+              className="w-full bg-[#c90b0e] text-white rounded-xl px-5 py-3 font-semibold hover:bg-[#9c0f06] transition-colors flex items-center justify-center gap-2"
+            >
+              <Grid className="w-5 h-5" />
+              {showDriveMatrix ? 'Skjul matrix over kørselstider' : 'Vis matrix over kørselstider'}
+            </button>
+          </div>
+
+          {showDriveMatrix && (
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
+              <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
+                <h3 className="font-semibold text-gray-700 flex items-center gap-2"><Grid className="w-4 h-4 text-[#c90b0e]" /> Kørselstidsmatrix — {DRIVE_TIME_CLUBS.length} klubber (minutter)</h3>
+                <p className="text-xs text-gray-500 mt-1">Scroll horisontalt og vertikalt for at se alle kørselstider. Farvekoder: <span className="inline-block w-3 h-3 bg-green-200 rounded-sm align-middle mx-0.5"></span> 0–15 min <span className="inline-block w-3 h-3 bg-yellow-200 rounded-sm align-middle mx-0.5"></span> 16–30 min <span className="inline-block w-3 h-3 bg-orange-200 rounded-sm align-middle mx-0.5"></span> 31–45 min <span className="inline-block w-3 h-3 bg-red-200 rounded-sm align-middle mx-0.5"></span> 46+ min</p>
+              </div>
+              <div className="overflow-auto max-h-[80vh]">
+                <table className="text-xs border-collapse">
+                  <thead>
+                    <tr>
+                      <th className="sticky left-0 top-0 z-30 bg-gray-100 px-2 py-1 border border-gray-300 min-w-[150px] text-left font-semibold text-gray-700">Klub</th>
+                      {DRIVE_TIME_CLUBS.map(club => (
+                        <th key={club} className="sticky top-0 z-20 bg-gray-100 px-0 py-1 border border-gray-300 font-normal text-gray-600" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed', minWidth: '26px', maxWidth: '26px', height: '130px' }}>
+                          <span className="block overflow-hidden" style={{ maxHeight: '120px' }}>{club}</span>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {DRIVE_TIME_CLUBS.map((fromClub) => (
+                      <tr key={fromClub} className="hover:bg-blue-50/30">
+                        <td className="sticky left-0 z-10 bg-gray-50 px-2 py-1 border border-gray-300 font-medium text-gray-800 whitespace-nowrap">{fromClub}</td>
+                        {DRIVE_TIME_CLUBS.map((toClub) => {
+                          if (fromClub === toClub) {
+                            return <td key={toClub} className="px-1 py-1 border border-gray-200 bg-gray-300 text-center text-gray-400">—</td>;
+                          }
+                          const time = DRIVE_TIME_MATRIX[fromClub]?.[toClub];
+                          let bg = 'bg-white';
+                          if (time != null) {
+                            if (time <= 15) bg = 'bg-green-100';
+                            else if (time <= 30) bg = 'bg-yellow-100';
+                            else if (time <= 45) bg = 'bg-orange-100';
+                            else bg = 'bg-red-100';
+                          }
+                          return <td key={toClub} className={`px-1 py-1 border border-gray-200 text-center ${bg}`}>{time ?? ''}</td>;
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Table: all distances from selected club */}
+          {fromMatch && tableData.length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
+                <h3 className="font-semibold text-gray-700 flex items-center gap-2"><MapPin className="w-4 h-4 text-orange-500" /> Alle afstande fra {fromMatch}</h3>
+              </div>
+              <div className="overflow-y-auto max-h-[500px]">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 sticky top-0">
+                    <tr>
+                      <th className="text-left px-4 py-2 font-medium text-gray-600">Klub</th>
+                      <th className="text-left px-4 py-2 font-medium text-gray-600">By</th>
+                      <th className="text-right px-4 py-2 font-medium text-gray-600">Kørselstid</th>
+                      <th className="text-right px-4 py-2 font-medium text-gray-600">Afstand</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tableData.map((row, i) => (
+                      <tr key={row.club} className={`border-t border-gray-100 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-blue-50/50 transition-colors`}>
+                        <td className="px-4 py-2 font-medium text-gray-800">{row.club}</td>
+                        <td className="px-4 py-2 text-gray-500">{row.info?.by || '—'}</td>
+                        <td className="px-4 py-2 text-right"><span className="inline-flex items-center gap-1 text-blue-700 font-medium"><Clock className="w-3 h-3" /> {row.time} min</span></td>
+                        <td className="px-4 py-2 text-right text-gray-600">{row.dist != null ? `${row.dist} km` : '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const renderHjælpView = () => (
     <div className="flex-1 overflow-auto p-4 md:p-8 bg-gray-50">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -5584,7 +6726,7 @@ export default function App() {
         {/* Header */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center gap-3 mb-3">
-            <HelpCircle className="w-8 h-8 text-green-600" />
+            <HelpCircle className="w-8 h-8 text-[#c90b0e]" />
             <h2 className="text-2xl md:text-3xl font-bold text-gray-800">Hjælp & Vejledning</h2>
           </div>
           <p className="text-gray-500 text-sm">Her finder du en guide til hele programmet — trin for trin, så du nemt kan planlægge dit stævne.</p>
@@ -5598,12 +6740,12 @@ export default function App() {
               { nr: '1', titel: 'Hent rækker ind', tekst: 'Hent den fil du har fået fra foda (den hedder typisk "RækkePuljeOversigt") ind i programmet. Alle hold og rækker kommer automatisk med.' },
               { nr: '2', titel: 'Indlæs ønsker', tekst: 'Indlæs filen med klubbernes ønsker. Programmet finder selv ud af hvad hvert ønske betyder — f.eks. om en klub gerne vil være vært.' },
               { nr: '3', titel: 'Vælg regler', tekst: 'Bestem hvilke regler programmet skal følge — f.eks. at hold fra samme klub ikke må være i samme pulje, eller at der skal tages hensyn til køreafstand.' },
-              { nr: '4', titel: 'Fordel hold', tekst: 'Klik "Fordel ALLE" for at lade programmet fordele alle hold i puljer. Det tager hensyn til dine regler, klubbernes ønsker, og hvem der er vært.' },
+              { nr: '4', titel: 'Fordel hold', tekst: 'Klik "Fordel ALT" for at tildele værter og fordele alle hold på én gang. Du kan også bruge "Fordel værter" og "Fordel øvrige" separat for mere kontrol.' },
               { nr: '5', titel: 'Tjek fordelingen', tekst: 'Klik "Tjek" for at sikre at alt ser rigtigt ud — at værterne har nok baner, og at klubbernes ønsker er opfyldt.' },
               { nr: '6', titel: 'Hent som dokument', tekst: 'Hent den færdige stævneplan som et dokument du kan printe — med 8 puljer pr. side.' },
             ].map(s => (
               <div key={s.nr} className="flex gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                <span className="flex-shrink-0 w-7 h-7 rounded-full bg-green-600 text-white flex items-center justify-center text-sm font-bold">{s.nr}</span>
+                <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#c90b0e] text-white flex items-center justify-center text-sm font-bold">{s.nr}</span>
                 <div>
                   <div className="font-bold text-sm text-gray-800">{s.titel}</div>
                   <div className="text-xs text-gray-500 mt-0.5">{s.tekst}</div>
@@ -5615,14 +6757,14 @@ export default function App() {
 
         {/* Tabs forklaring */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4"><LayoutGrid className="w-5 h-5 text-blue-500" /> Programmets menupunkter</h3>
+          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4"><LayoutGrid className="w-5 h-5 text-[#c90b0e]" /> Programmets menupunkter</h3>
           <div className="space-y-3">
             {[
-              { ikon: <LayoutGrid className="w-4 h-4 text-green-600" />, navn: 'Rækker', tekst: 'Dit hovedoverblik. Her henter du dine turneringsrækker ind, ser alle hold, opretter puljer, fordeler hold og kan trække hold fra én pulje til en anden med musen. Herfra kan du også fordele alle rækker og tjekke hele stævneplanen.' },
+              { ikon: <LayoutGrid className="w-4 h-4 text-[#c90b0e]" />, navn: 'Rækker', tekst: 'Dit hovedoverblik. Her henter du dine turneringsrækker ind, ser alle hold, opretter puljer, fordeler hold og kan trække hold fra én pulje til en anden med musen. Herfra kan du også fordele alle rækker og tjekke hele stævneplanen.' },
               { ikon: <Key className="w-4 h-4 text-amber-600" />, navn: 'Nøgler', tekst: 'Nøgler bestemmer kamprækkefølgen i en pulje — altså hvem der spiller mod hvem, og i hvilken rækkefølge. F.eks. i en pulje med 4 hold: først spiller hold 1 mod 2, så hold 3 mod 4, osv. Du kan redigere eller lave dine egne.' },
               { ikon: <Settings className="w-4 h-4 text-gray-600" />, navn: 'Kriterier', tekst: 'Her vælger du de regler programmet skal følge, når det fordeler holdene. F.eks. at hold fra samme klub ikke må være i samme pulje, at værten skal have nok baner, eller at hold der ligger tæt på hinanden skal samles.' },
-              { ikon: <Sparkles className="w-4 h-4 text-pink-600" />, navn: 'Ønsker', tekst: 'Her kan du se og rette klubbernes individuelle ønsker. Når du indlæser ønskefilen, finder programmet selv ud af hvad hvert ønske betyder (f.eks. "vil gerne være vært" eller "vil undgå bestemt modstander"). Du kan altid rette det manuelt.' },
-              { ikon: <MapIcon className="w-4 h-4 text-indigo-600" />, navn: 'Baner', tekst: 'Her kan du se hvor mange baner hver klub har — fordelt på 3-mands, 5-mands og 8-mands baner. Det bruges til at sikre at en vært har nok baner til de kampe der skal spilles.' },
+              { ikon: <Sparkles className="w-4 h-4 text-[#c90b0e]" />, navn: 'Ønsker', tekst: 'Her kan du se og rette klubbernes individuelle ønsker. Når du indlæser ønskefilen, finder programmet selv ud af hvad hvert ønske betyder (f.eks. "vil gerne være vært" eller "vil undgå bestemt modstander"). Du kan altid rette det manuelt.' },
+              { ikon: <MapIcon className="w-4 h-4 text-[#c90b0e]" />, navn: 'Baner', tekst: 'Her kan du se hvor mange baner hver klub har — fordelt på 3-mands, 5-mands og 8-mands baner. Det bruges til at sikre at en vært har nok baner til de kampe der skal spilles.' },
               { ikon: <MapPin className="w-4 h-4 text-red-600" />, navn: 'Værtsklubber', tekst: 'Her kan du se hvilke klubber der er valgt som vært, for hvilke rækker, og på hvilke datoer. Du kan også se hvem der var vært ved tidligere stævner.' },
             ].map(t => (
               <div key={t.navn} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
@@ -5638,7 +6780,7 @@ export default function App() {
 
         {/* Regeltyper */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4"><Wand2 className="w-5 h-5 text-pink-500" /> Typer af ønsker</h3>
+          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4"><Wand2 className="w-5 h-5 text-[#c90b0e]" /> Typer af ønsker</h3>
           <p className="text-xs text-gray-500 mb-3">Når du indlæser klubbernes ønsker, finder programmet selv ud af hvilken type hvert ønske er. Det bestemmer hvad programmet gør med ønsket, når holdene fordeles.</p>
           <div className="space-y-2">
             {[
@@ -5684,21 +6826,75 @@ export default function App() {
           </div>
         </div>
 
-        {/* Fordelingsalgoritme */}
+        {/* Advarsler & konflikter */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4"><Shuffle className="w-5 h-5 text-green-500" /> Sådan fordeler programmet holdene</h3>
-          <p className="text-xs text-gray-500 mb-3">Når du klikker "Fordel række" eller "Fordel ALLE", gør programmet følgende i denne rækkefølge:</p>
+          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4"><AlertTriangle className="w-5 h-5 text-red-500" /> Advarsler & konflikter</h3>
+          <p className="text-xs text-gray-500 mb-4">Programmet tjekker automatisk for konflikter efter hver fordeling. Her kan du se hvad de forskellige advarsler og farver betyder.</p>
+
+          <h4 className="font-bold text-sm text-gray-700 mb-2">Konflikttyper</h4>
+          <p className="text-xs text-gray-500 mb-2">Når du klikker "Tjek" eller fordeler hold, finder programmet disse typer konflikter:</p>
+          <div className="space-y-2 mb-5">
+            {[
+              { type: 'Klubkonflikt', farve: 'bg-red-100 border-red-300 text-red-800', tekst: 'Flere hold fra samme klub er havnet i samme pulje. Det sker f.eks. hvis "OB 1" og "OB 2" er i pulje A.' },
+              { type: 'Vært samme dato', farve: 'bg-red-100 border-red-300 text-red-800', tekst: 'Samme klub er valgt som vært i flere puljer på samme spilledag. Klubben kan typisk kun være vært ét sted ad gangen.' },
+              { type: 'Vært gentaget', farve: 'bg-orange-100 border-orange-300 text-orange-800', tekst: 'Samme klub var også vært ved det forrige stævne. Det er bedst at skifte rundt, så alle klubber deles om værtskabet.' },
+              { type: 'Undgå-modstander brudt', farve: 'bg-red-100 border-red-300 text-red-800', tekst: 'En klub møder en modstander som den gerne ville undgå. Det stammer fra et ønske i ønskefilen.' },
+              { type: 'Vært i flere puljer', farve: 'bg-orange-100 border-orange-300 text-orange-800', tekst: 'Samme klub er vært i flere puljer — måske på tværs af forskellige rækker. Det kan betyde at klubben ikke har nok baner.' },
+              { type: 'Banekapacitet overskredet', farve: 'bg-red-100 border-red-300 text-red-800', tekst: 'Værtsklubben har ikke nok baner af den rigtige størrelse til kampene i puljen. Tjek under "Baner" om klubben har det der skal bruges.' },
+            ].map(k => (
+              <div key={k.type} className="flex items-start gap-3 p-2.5 rounded-lg border border-gray-100">
+                <span className={`flex-shrink-0 px-2 py-0.5 rounded text-[10px] font-bold border whitespace-nowrap ${k.farve}`}>{k.type}</span>
+                <span className="text-xs text-gray-600 mt-0.5">{k.tekst}</span>
+              </div>
+            ))}
+          </div>
+
+          <h4 className="font-bold text-sm text-gray-700 mb-2">Puljekanter (farver)</h4>
+          <p className="text-xs text-gray-500 mb-2">Puljernes kant-farve viser dig hurtigt om der er noget at tage stilling til:</p>
+          <div className="space-y-2 mb-5">
+            {[
+              { farve: 'border-l-4 border-red-400', tekst: 'Rød kant — Puljen har en uløst konflikt (f.eks. klubkonflikt eller værtskonflikt). Klik "Tjek" for at se detaljer.' },
+              { farve: 'border-l-4 border-blue-400', tekst: 'Blå kant — Puljen har specifikke regler sat, eller er låst så den ikke ændres ved fordeling.' },
+              { farve: 'border-l-4 border-gray-300', tekst: 'Grå kant — Normal pulje uden problemer.' },
+              { farve: 'border-l-4 border-green-500', tekst: 'Grøn kant — Et hold trækkes hen over puljen (drag & drop).' },
+            ].map((k, i) => (
+              <div key={i} className={`flex items-center gap-3 p-2.5 rounded-lg bg-gray-50 ${k.farve}`}>
+                <span className="text-xs text-gray-600">{k.tekst}</span>
+              </div>
+            ))}
+          </div>
+
+          <h4 className="font-bold text-sm text-gray-700 mb-2">Ikoner i rækkelisten</h4>
+          <p className="text-xs text-gray-500 mb-2">Små ikoner ved siden af rækkenavnet viser dig om der er problemer:</p>
           <div className="space-y-2">
             {[
-              { nr: '1', tekst: 'Først vælges en vært for hver pulje. Klubber der har ønsket at være vært, får forrang. Derefter kigges der på antal baner, hvem der var vært sidst, og øvrige ønsker.' },
-              { nr: '2', tekst: 'Holdene fordeles i puljerne, så hold der ligger tæt på værtens baner samles. Hvis to puljer er lige langt væk, vælges den pulje der har færrest hold.' },
-              { nr: '3', tekst: 'Ønsker om at bestemte hold skal være i samme pulje, eller at bestemte modstandere skal undgås, bliver respekteret.' },
-              { nr: '4', tekst: 'Hold fra samme klub fordeles i forskellige puljer, så de ikke møder hinanden.' },
-              { nr: '5', tekst: 'Til sidst finjusteres fordelingen ved at bytte hold rundt, hvis et hold ligger tættere på en anden puljes vært.' },
-              { nr: '6', tekst: 'Puljer med for få hold til en fuld kamprunde fyldes op med "oversiddere" (pladsholdere). Værten placeres på den plads der giver flest kampe.' },
+              { ikon: <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />, tekst: 'Rød cirkel — En pulje har en fejl, f.eks. hold fra samme klub i samme pulje.' },
+              { ikon: <AlertTriangle className="w-4 h-4 text-orange-500 flex-shrink-0" />, tekst: 'Orange trekant — Der er et problem med værten, f.eks. vært på samme dato flere gange.' },
+              { ikon: <AlertTriangle className="w-4 h-4 text-yellow-500 flex-shrink-0" />, tekst: 'Gul trekant — Antal hold i en pulje passer ikke optimalt til en kampnøgle.' },
+            ].map((k, i) => (
+              <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg bg-gray-50 border border-gray-100">
+                {k.ikon}
+                <span className="text-xs text-gray-600">{k.tekst}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Fordelingsalgoritme */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4"><Shuffle className="w-5 h-5 text-[#c90b0e]" /> Sådan fordeler programmet holdene</h3>
+          <p className="text-xs text-gray-500 mb-3">Når du klikker "Fordel øvrige" eller "Fordel ALT", gør programmet følgende i denne rækkefølge:</p>
+          <div className="space-y-2">
+            {[
+              { nr: '1', tekst: 'Programmet tjekker at alle puljer har en værtsklub. Hvis ikke, vises en besked om hvad der mangler.' },
+              { nr: '2', tekst: 'De øvrige hold fordeles i puljerne ud fra kørselstid (max 50 min), ønsker og banekapacitet.' },
+              { nr: '3', tekst: 'Hold fra samme klub fordeles i forskellige puljer, så de ikke møder hinanden.' },
+              { nr: '4', tekst: 'Ønsker om at bestemte hold skal være i samme pulje, eller at bestemte modstandere skal undgås, bliver respekteret.' },
+              { nr: '5', tekst: 'Kørselstiden optimeres ved at bytte hold mellem puljer, hvis et hold ligger tættere på en anden puljes vært.' },
+              { nr: '6', tekst: 'Hvis der er konflikter, genstarter programmet op til 20 gange per række. Hold der ikke kan placeres uden konflikter, forbliver i "ikke-fordelte" kolonnen.' },
             ].map(s => (
               <div key={s.nr} className="flex gap-3 items-start p-2 pl-3">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-[10px] font-bold mt-0.5">{s.nr}</span>
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-red-100 text-[#c90b0e] flex items-center justify-center text-[10px] font-bold mt-0.5">{s.nr}</span>
                 <span className="text-xs text-gray-600">{s.tekst}</span>
               </div>
             ))}
@@ -5733,15 +6929,15 @@ export default function App() {
           <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4"><Wrench className="w-5 h-5 text-gray-500" /> Vigtige knapper</h3>
           <div className="space-y-2">
             {[
-              { navn: 'Fordel række', tekst: 'Fordeler holdene i den valgte række ud i puljer efter dine regler og ønsker.' },
-              { navn: 'Fordel ALLE', tekst: 'Fordeler alle rækker på én gang. Eventuelle tidligere fordelinger slettes først.' },
+              { navn: 'Fordel øvrige', tekst: 'Åbner en popup hvor du kan fordele øvrige hold — enten kun for den aktive række, eller for alle rækker med et enkelt flueben.' },
+              { navn: 'Fordel ALT', tekst: 'Kører "Fordel værter" og derefter "Fordel øvrige" for alle rækker i ét tryk. Opretter automatisk puljer hvis de mangler.' },
               { navn: 'Auto-tilpas', tekst: 'Lader programmet selv vælge det bedste antal puljer og puljestørrelse ud fra hvor mange hold der er.' },
               { navn: 'Tjek', tekst: 'Gennemgår hele stævneplanen og tjekker om værterne har nok baner, om klubbernes ønsker er opfyldt, og om der er problemer.' },
               { navn: 'Gem / Åbn', tekst: 'Gem dit arbejde i en fil, så du kan åbne det igen senere. Du kan også åbne en plan du har gemt før.' },
               { navn: 'Hent dokument', tekst: 'Hent den færdige stævneplan som et dokument du kan printe — med 8 puljer pr. side og sidetal.' },
             ].map(k => (
               <div key={k.navn} className="flex items-start gap-3 p-2.5 bg-gray-50 rounded-lg border border-gray-100">
-                <span className="flex-shrink-0 px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-800 border border-green-200">{k.navn}</span>
+                <span className="flex-shrink-0 px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-800 border border-red-200">{k.navn}</span>
                 <span className="text-xs text-gray-600 mt-0.5">{k.tekst}</span>
               </div>
             ))}
@@ -5756,47 +6952,55 @@ export default function App() {
     <>
       <div className="print:hidden flex flex-col h-screen bg-gray-50 font-sans text-gray-800 overflow-hidden">
         
-        <div className="bg-green-700 text-white h-10 flex items-center justify-between px-4 shadow-md z-20 shrink-0 gap-4 overflow-visible">
+        <div className="bg-[#c90b0e] text-white h-10 flex items-center justify-between px-4 shadow-md z-20 shrink-0 gap-4 overflow-visible">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 font-bold text-base">
-              <span className="text-lg">⚽</span>
+              <img src={dbuSegl} alt="DBU" className="h-6 w-6" />
               StævnePlan
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-1">
               <Tip text="Se og fordel hold i turneringsrækker og puljer" position="bottom">
-              <button onClick={() => setActiveTab('rækker')} className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-medium transition-colors text-sm ${activeTab === 'rækker' ? 'bg-green-800 text-white shadow-inner' : 'text-green-50 hover:bg-green-600'}`}>
-                <LayoutGrid className="w-4 h-4" /> Rækker
-              </button>
-              </Tip>
-              <Tip text="Vælg kampmønstre — hvem møder hvem i puljerne" position="bottom">
-              <button onClick={() => setActiveTab('nøgler')} className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-medium transition-colors text-sm ${activeTab === 'nøgler' ? 'bg-green-800 text-white shadow-inner' : 'text-green-50 hover:bg-green-600'}`}>
-                <Key className="w-4 h-4" /> Nøgler
-              </button>
-              </Tip>
-              <Tip text="Indstil regler for hvordan holdene skal fordeles" position="bottom">
-              <button onClick={() => setActiveTab('kriterier')} className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-medium transition-colors text-sm ${activeTab === 'kriterier' ? 'bg-green-800 text-white shadow-inner' : 'text-green-50 hover:bg-green-600'}`}>
-                <Settings className="w-4 h-4" /> Kriterier
+              <button onClick={() => setActiveTab('rækker')} className={`flex items-center gap-1 px-2 py-1 rounded-md font-medium transition-colors text-xs ${activeTab === 'rækker' ? 'bg-white text-[#c90b0e] shadow-inner font-bold' : 'text-white/80 hover:bg-white/15'}`}>
+                <LayoutGrid className="w-3.5 h-3.5" /> Rækker
               </button>
               </Tip>
               <Tip text="Se og ret klubbernes ønsker til stævnet" position="bottom">
-              <button onClick={() => setActiveTab('ønsker')} className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-medium transition-colors text-sm ${activeTab === 'ønsker' ? 'bg-green-800 text-white shadow-inner' : 'text-green-50 hover:bg-green-600'}`}>
-                <Sparkles className="w-4 h-4" /> Ønsker
+              <button onClick={() => setActiveTab('ønsker')} className={`flex items-center gap-1 px-2 py-1 rounded-md font-medium transition-colors text-xs ${activeTab === 'ønsker' ? 'bg-white text-[#c90b0e] shadow-inner font-bold' : 'text-white/80 hover:bg-white/15'}`}>
+                <Sparkles className="w-3.5 h-3.5" /> Ønsker
+              </button>
+              </Tip>
+              <Tip text="Indstil regler for hvordan holdene skal fordeles" position="bottom">
+              <button onClick={() => setActiveTab('kriterier')} className={`flex items-center gap-1 px-2 py-1 rounded-md font-medium transition-colors text-xs ${activeTab === 'kriterier' ? 'bg-white text-[#c90b0e] shadow-inner font-bold' : 'text-white/80 hover:bg-white/15'}`}>
+                <Settings className="w-3.5 h-3.5" /> Kriterier
+              </button>
+              </Tip>
+              <Tip text="Se og tilpas kampnøgler og skabeloner" position="bottom">
+              <button onClick={() => setActiveTab('nøgler')} className={`flex items-center gap-1 px-2 py-1 rounded-md font-medium transition-colors text-xs ${activeTab === 'nøgler' ? 'bg-white text-[#c90b0e] shadow-inner font-bold' : 'text-white/80 hover:bg-white/15'}`}>
+                <Key className="w-3.5 h-3.5" /> Nøgler
               </button>
               </Tip>
               <Tip text="Angiv hvor mange baner hver lokation har" position="bottom">
-              <button onClick={() => setActiveTab('baner')} className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-medium transition-colors text-sm ${activeTab === 'baner' ? 'bg-green-800 text-white shadow-inner' : 'text-green-50 hover:bg-green-600'}`}>
-                <MapIcon className="w-4 h-4" /> Baner
+              <button onClick={() => setActiveTab('baner')} className={`flex items-center gap-1 px-2 py-1 rounded-md font-medium transition-colors text-xs ${activeTab === 'baner' ? 'bg-white text-[#c90b0e] shadow-inner font-bold' : 'text-white/80 hover:bg-white/15'}`}>
+                <MapIcon className="w-3.5 h-3.5" /> Baner
               </button>
               </Tip>
               <Tip text="Se hvilke klubber der er vært og deres kontaktinfo" position="bottom">
-              <button onClick={() => setActiveTab('værtsklubber')} className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-medium transition-colors text-sm ${activeTab === 'værtsklubber' ? 'bg-green-800 text-white shadow-inner' : 'text-green-50 hover:bg-green-600'}`}>
-                <MapPin className="w-4 h-4" /> Værtsklubber
+              <button onClick={() => setActiveTab('værtsklubber')} className={`flex items-center gap-1 px-2 py-1 rounded-md font-medium transition-colors text-xs ${activeTab === 'værtsklubber' ? 'bg-white text-[#c90b0e] shadow-inner font-bold' : 'text-white/80 hover:bg-white/15'}`}>
+                <MapPin className="w-3.5 h-3.5" /> Værtsklubber
+              </button>
+              </Tip>
+              <Tip text="Opslag på kørselstider og afstande mellem klubber" position="bottom">
+              <button onClick={() => setActiveTab('kørselstider')} className={`flex items-center gap-1 px-2 py-1 rounded-md font-medium transition-colors text-xs ${activeTab === 'kørselstider' ? 'bg-white text-[#c90b0e] shadow-inner font-bold' : 'text-white/80 hover:bg-white/15'}`}>
+                <Car className="w-3.5 h-3.5" /> Kørselstider
               </button>
               </Tip>
               <Tip text="Vejledning og forklaring af programmets funktioner" position="bottom">
-              <button onClick={() => setActiveTab('hjælp')} className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-medium transition-colors text-sm ${activeTab === 'hjælp' ? 'bg-green-800 text-white shadow-inner' : 'text-green-50 hover:bg-green-600'}`}>
-                <HelpCircle className="w-4 h-4" /> Hjælp
+              <button onClick={() => setActiveTab('hjælp')} className={`flex items-center gap-1 px-2 py-1 rounded-md font-medium transition-colors text-xs ${activeTab === 'hjælp' ? 'bg-white text-[#c90b0e] shadow-inner font-bold' : 'text-white/80 hover:bg-white/15'}`}>
+                <HelpCircle className="w-3.5 h-3.5" /> Hjælp
               </button>
+              </Tip>
+              <Tip text="Start stævneguiden — Bolden guider dig igennem det hele!" position="bottom">
+              <button onClick={() => setGuideStep(1)} className="flex items-center justify-center w-7 h-7 rounded-full bg-white border-2 border-white text-[#c90b0e] font-bold text-[10px] hover:bg-red-50 transition-colors shadow-sm">&#9917;</button>
               </Tip>
             </div>
           </div>
@@ -5806,7 +7010,7 @@ export default function App() {
             <Tip text="Åbn en stævneplan du har gemt før" position="bottom">
             <button
               onClick={() => projectInputRef.current?.click()}
-              className="flex items-center gap-2 text-white px-3 py-1.5 rounded-md font-medium transition-colors text-sm border border-green-600 bg-green-800 hover:bg-green-900 shadow-sm"
+              className="flex items-center gap-2 text-white px-3 py-1.5 rounded-md font-medium transition-colors text-sm border border-white/20 bg-white/10 hover:bg-white/20 shadow-sm"
             >
               <FolderOpen className="w-4 h-4" /> Åbn
             </button>
@@ -5814,7 +7018,7 @@ export default function App() {
             <Tip text="Gem dit arbejde så du kan fortsætte senere" position="bottom">
             <button
               onClick={handleSaveProject}
-              className="flex items-center gap-2 text-white px-3 py-1.5 rounded-md font-medium transition-colors text-sm border border-green-600 bg-green-800 hover:bg-green-900 shadow-sm"
+              className="flex items-center gap-2 text-white px-3 py-1.5 rounded-md font-medium transition-colors text-sm border border-white/20 bg-white/10 hover:bg-white/20 shadow-sm"
             >
               <Save className="w-4 h-4" /> Gem
             </button>
@@ -5823,10 +7027,10 @@ export default function App() {
             <button
               onClick={handleDownloadPDF}
               disabled={isGeneratingPDF}
-              className={`flex items-center gap-2 text-white px-3 py-1.5 rounded-md font-medium transition-colors text-sm border shadow-sm ${isGeneratingPDF ? 'bg-gray-500 border-gray-600 cursor-wait' : 'bg-green-800 hover:bg-green-900 border-green-600'}`}
+              className={`flex items-center gap-2 text-white px-3 py-1.5 rounded-md font-medium transition-colors text-sm border shadow-sm ${isGeneratingPDF ? 'bg-gray-500 border-gray-600 cursor-wait' : 'bg-white/10 hover:bg-white/20 border-white/20'}`}
             >
               {isGeneratingPDF ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
-              {isGeneratingPDF ? 'Arbejder...' : 'Hent dokument'}
+              {isGeneratingPDF ? 'Arbejder...' : 'Hent'}
             </button>
             </Tip>
           </div>
@@ -5838,6 +7042,7 @@ export default function App() {
           {activeTab === 'baner' && <BanerView clubs={clubs} setClubs={setClubs} />}
           {activeTab === 'nøgler' && renderNøglerView()}
           {activeTab === 'værtsklubber' && renderVærtsklubberView()}
+          {activeTab === 'kørselstider' && renderKørselstiderView()}
           {activeTab === 'hjælp' && renderHjælpView()}
           {activeTab === 'rækker' && (
             <>
@@ -5861,7 +7066,7 @@ export default function App() {
                       {rowFilterArgang !== 'ALL' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700">{rowFilterArgang}</span>}
                       {rowFilterNiveau !== 'ALL' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700">{rowFilterNiveau}</span>}
                       {rowFilterKoen !== 'ALL' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-100 text-pink-700">{rowFilterKoen === 'dr.' ? 'Drenge' : rowFilterKoen === 'pi.' ? 'Piger' : rowFilterKoen === 'mix' ? 'Mix' : rowFilterKoen}</span>}
-                      {rowFilterFormat !== 'ALL' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700">{rowFilterFormat}</span>}
+                      {rowFilterFormat !== 'ALL' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-[#c90b0e]">{rowFilterFormat}</span>}
                       {rowFilterDato !== 'ALL' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-700">{rowFilterDato}</span>}
                     </div>
                   )}
@@ -5902,17 +7107,17 @@ export default function App() {
                                   onDrop={(e) => handleSidebarRowDrop(e, row.id)}
                                   className={`rounded-lg border-2 transition-all group relative ${dragOverSidebarRowId === row.id ? 'border-blue-400 bg-blue-50' : 'border-transparent'}`}
                               >
-                                <div onClick={() => setActiveRowId(row.id)} className={`w-full flex items-center justify-between px-2 py-1.5 rounded-md cursor-pointer transition-colors duration-150 text-xs pr-8 ${activeRowId === row.id ? 'bg-green-50 text-green-700 font-medium' : 'text-gray-600 hover:bg-gray-100'} ${hasActiveRowFilter && !hideFilteredRows && !filteredRowIds.has(row.id) ? 'opacity-30' : ''}`}>
+                                <div onClick={() => setActiveRowId(row.id)} className={`w-full flex items-center justify-between px-2 py-1.5 rounded-md cursor-pointer transition-colors duration-150 text-xs pr-8 ${activeRowId === row.id ? 'bg-red-50 text-[#c90b0e] font-medium' : 'text-gray-600 hover:bg-gray-100'} ${hasActiveRowFilter && !hideFilteredRows && !filteredRowIds.has(row.id) ? 'opacity-30' : ''}`}>
                                   <span className="truncate flex items-center gap-2">
-                                    <LayoutGrid className={`w-4 h-4 flex-shrink-0 ${activeRowId === row.id ? 'text-green-600' : 'text-gray-400'}`} />
+                                    <LayoutGrid className={`w-4 h-4 flex-shrink-0 ${activeRowId === row.id ? 'text-[#c90b0e]' : 'text-gray-400'}`} />
                                     <span className="truncate">{row.name}</span>
                                   </span>
                                   <div className="flex items-center gap-1.5 flex-shrink-0 pl-2">
-                                    {hasErrors && <AlertCircle className="w-4 h-4 text-red-500" title="Der er et problem i en pulje som skal løses" />}
-                                    {hasAnyHostConflict && !hasErrors && <AlertTriangle className="w-4 h-4 text-orange-500" title="Der er et problem med værten i en pulje" />}
-                                    {row.hasWarning && !hasErrors && !hasAnyHostConflict && <AlertTriangle className="w-4 h-4 text-yellow-500" title="Antal hold passer ikke optimalt" />}
-                                    {poolSizeIssues.hasSmallPool && <AlertTriangle className="w-4 h-4 text-purple-500" title="En pulje har færre end 4 hold — tomme pladser tilføjes automatisk" />}
-                                    {poolSizeIssues.hasLargePool && <AlertTriangle className="w-4 h-4 text-red-400" title="En pulje har 8 eller flere hold — det ideelle er 4-7 hold pr. pulje" />}
+                                    {hasErrors && <Tip text="Der er et problem i en pulje som skal løses" position="right" fixed><AlertCircle className="w-4 h-4 text-red-500" /></Tip>}
+                                    {hasAnyHostConflict && !hasErrors && <Tip text="Der er et problem med værten i en pulje" position="right" fixed><AlertTriangle className="w-4 h-4 text-orange-500" /></Tip>}
+                                    {row.hasWarning && !hasErrors && !hasAnyHostConflict && <Tip text="Antal hold passer ikke optimalt" position="right" fixed><AlertTriangle className="w-4 h-4 text-yellow-500" /></Tip>}
+                                    {poolSizeIssues.hasSmallPool && <Tip text="En pulje har færre end 4 hold — tomme pladser tilføjes automatisk" position="right" fixed><AlertTriangle className="w-4 h-4 text-purple-500" /></Tip>}
+                                    {poolSizeIssues.hasLargePool && <Tip text="En pulje har 8 eller flere hold — det ideelle er 4-7 hold pr. pulje" position="right" fixed><AlertTriangle className="w-4 h-4 text-red-400" /></Tip>}
                                     {unassignedTeams > 0 && <span className="bg-orange-100 text-orange-600 text-[10px] px-1.5 py-0.5 rounded-full font-bold">{unassignedTeams}</span>}
                                   </div>
                                 </div>
@@ -5932,19 +7137,19 @@ export default function App() {
                 <div className="p-2.5 border-t border-gray-200 flex flex-col gap-1.5">
                   <Tip text="Opret en ny turneringsrække manuelt" position="top">
                   <button onClick={() => setAddManualRowPrompt(true)} className="w-full flex items-center justify-center gap-2 bg-gray-100 border border-gray-300 text-gray-700 py-1.5 rounded-lg hover:bg-gray-200 transition text-sm font-medium">
-                    <Plus className="w-4 h-4 text-green-600" /> Tilføj række
+                    <Plus className="w-4 h-4 text-[#c90b0e]" /> Tilføj række
                   </button>
                   </Tip>
                   <input type="file" accept=".xlsx, .xls, .csv, .txt" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
                   <Tip text="Hent rækker fra en fil du har hentet fra FODA" position="top">
                   <button onClick={() => fileInputRef.current?.click()} className="w-full flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 py-1.5 rounded-lg hover:bg-gray-50 transition text-sm font-medium">
-                    <Upload className="w-4 h-4 text-green-600" /> Hent rækker ind
+                    <Upload className="w-4 h-4 text-[#c90b0e]" /> Hent rækker ind
                   </button>
                   </Tip>
                 </div>
               </div>
 
-              <div className={`w-1 cursor-col-resize z-[5] flex-shrink-0 hover:bg-green-400 transition-colors ${isResizing ? 'bg-green-500' : 'bg-gray-200'}`} onMouseDown={() => setIsResizing(true)} title="Træk for at justere bredden på menuen" />
+              <div className={`w-1 cursor-col-resize z-[5] flex-shrink-0 hover:bg-[#c90b0e]/60 transition-colors ${isResizing ? 'bg-[#c90b0e]' : 'bg-gray-200'}`} onMouseDown={() => setIsResizing(true)} title="Træk for at justere bredden på menuen" />
 
               <div className="flex-1 flex flex-col h-full overflow-hidden">
                 <div className="relative bg-white border-b border-gray-200 px-4 py-2 flex justify-between items-center shadow-sm z-10 flex-shrink-0">
@@ -5959,27 +7164,24 @@ export default function App() {
                     </button>
                     </Tip>
                     <Tip text="Fordel kun værtsklubber til puljerne — holdene flyttes ikke" position="bottom">
-                    <button onClick={() => handleDistributeHostsOnly('active')} className="flex items-center gap-1.5 bg-yellow-100 text-yellow-700 px-2.5 py-1.5 rounded font-medium hover:bg-yellow-200 transition-colors text-[11px] shadow-sm">
+                    <button onClick={() => handleDistributeHostsOnly('active')} className="flex items-center gap-1.5 bg-gray-100 text-gray-700 px-2.5 py-1.5 rounded font-medium hover:bg-gray-200 transition-colors text-[11px] shadow-sm border border-gray-200">
                       <MapPin className="w-3.5 h-3.5" /> Fordel værter
                     </button>
                     </Tip>
-                    <Tip text="Fordel holdene i denne række ud i puljer automatisk" position="bottom">
-                    <button onClick={() => handleRandomizeClick('active')} className="flex items-center gap-1.5 bg-green-100 text-green-700 px-2.5 py-1.5 rounded font-medium hover:bg-green-200 transition-colors text-[11px] shadow-sm">
-                      <Shuffle className="w-3.5 h-3.5" /> Fordel række
+                    <Tip text="Fordel de øvrige hold i puljerne (værter skal være tildelt først)" position="bottom">
+                    <button onClick={() => setDistributeRemainingPopup({ isOpen: true, allRows: false })} className="flex items-center gap-1.5 bg-gray-100 text-gray-700 px-2.5 py-1.5 rounded font-medium hover:bg-gray-200 transition-colors text-[11px] shadow-sm border border-gray-200">
+                      <Shuffle className="w-3.5 h-3.5" /> Fordel øvrige
                     </button>
                     </Tip>
-                    <Tip text="Fordel alle hold i alle rækker på én gang" position="bottom">
-                    <button onClick={() => handleRandomizeClick('all')} className="flex items-center gap-1.5 bg-blue-100 text-blue-700 px-2.5 py-1.5 rounded font-medium hover:bg-blue-200 transition-colors text-[11px] shadow-sm">
-                      <Shuffle className="w-3.5 h-3.5" /> Fordel ALLE
+                    <Tip text="Fordel værter og øvrige hold i alle rækker på én gang. Opretter puljer automatisk hvis de mangler." position="bottom">
+                    <button onClick={handleDistributeAll} className="flex items-center gap-1.5 bg-gray-100 text-gray-700 px-2.5 py-1.5 rounded font-medium hover:bg-gray-200 transition-colors text-[11px] shadow-sm border border-gray-200">
+                      <Shuffle className="w-3.5 h-3.5" /> Fordel ALT
                     </button>
                     </Tip>
                     <Tip text="Tjek at stævneplanen ser rigtig ud — baner, ønsker og regler" position="bottom">
-                    <button onClick={() => setValidationModal({ isOpen: true, scope: 'all' })} className="flex items-center gap-1.5 bg-purple-100 text-purple-700 px-2.5 py-1.5 rounded font-medium hover:bg-purple-200 transition-colors text-[11px] shadow-sm">
+                    <button onClick={() => setValidationModal({ isOpen: true, scope: 'all' })} className="flex items-center gap-1.5 bg-gray-100 text-gray-700 px-2.5 py-1.5 rounded font-medium hover:bg-gray-200 transition-colors text-[11px] shadow-sm border border-gray-200">
                       <ShieldCheck className="w-3.5 h-3.5" /> Tjek
                     </button>
-                    </Tip>
-                    <Tip text="Start stævneguiden — Bolden guider dig igennem det hele!" position="bottom">
-                    <button onClick={() => setGuideStep(1)} className="flex items-center justify-center w-8 h-8 rounded-full bg-white border-2 border-green-500 text-green-700 font-bold text-xs hover:bg-green-50 transition-colors shadow-sm">&#9917;</button>
                     </Tip>
                   </div>
                   <div className="text-[11px] text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full font-medium">
@@ -6025,7 +7227,7 @@ export default function App() {
                             style={{ width: `${columnWidths['unassigned'] || 280}px` }}
                             className={`relative pool-container flex flex-col bg-white rounded-xl border-2 flex-shrink-0 max-h-full ${isBeingResized ? '' : 'transition-all duration-200'} ${
                               isDragOverHeader ? 'border-blue-500 bg-blue-50 shadow-lg -translate-y-1' : 
-                              isDragOver && draggedTeamId !== null ? 'border-green-400 bg-green-50' : 'border-gray-200'
+                              isDragOver && draggedTeamId !== null ? 'border-blue-400 bg-blue-50' : 'border-gray-200'
                             }`}
                           >
                             <div 
@@ -6061,9 +7263,9 @@ export default function App() {
                                        className={`bg-white border p-2 rounded-lg shadow-sm cursor-grab active:cursor-grabbing transition-all group flex items-center gap-1.5 ${
                                           isRenamedBye ? 'bg-blue-50 border-blue-300 border-dashed text-blue-800 hover:border-blue-400' : 
                                           team.isBye ? 'bg-purple-50 border-purple-300 border-dashed text-purple-800 hover:border-purple-400' : 
-                                          'border-gray-200 hover:border-green-400 hover:shadow-md'
+                                          'border-gray-200 hover:border-gray-400 hover:shadow-md'
                                        }`}>
-                                    <GripVertical className={`w-4 h-4 flex-shrink-0 ${isRenamedBye ? 'text-blue-300 group-hover:text-blue-500' : team.isBye ? 'text-purple-300 group-hover:text-purple-500' : 'text-gray-300 group-hover:text-green-500'}`} />
+                                    <GripVertical className={`w-4 h-4 flex-shrink-0 ${isRenamedBye ? 'text-blue-300 group-hover:text-blue-500' : team.isBye ? 'text-purple-300 group-hover:text-purple-500' : 'text-gray-300 group-hover:text-[#c90b0e]'}`} />
                                     <div className="font-medium truncate text-sm flex-1">{team.name}</div>
                                     
                                     <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -6071,7 +7273,7 @@ export default function App() {
                                         <Edit2 className="w-3.5 h-3.5" />
                                       </button>
                                       {isRenamedBye && (
-                                        <button onClick={() => handleMakePermanent(team.id)} className="text-green-500 hover:text-green-700 p-1" title="Gør til permanent klub">
+                                        <button onClick={() => handleMakePermanent(team.id)} className="text-[#c90b0e] hover:text-[#9c0f06] p-1" title="Gør til permanent klub">
                                           <UserCheck className="w-3.5 h-3.5" />
                                         </button>
                                       )}
@@ -6098,7 +7300,7 @@ export default function App() {
                               onDoubleClick={(e) => handleColAutoFit(e, 'unassigned')}
                               title="Træk for at justere. Dobbeltklik for auto-tilpasning."
                             >
-                              <div className={`w-1 h-full transition-colors ${isBeingResized ? 'bg-green-500' : 'bg-transparent group-hover/resizer:bg-green-400'}`} />
+                              <div className={`w-1 h-full transition-colors ${isBeingResized ? 'bg-[#c90b0e]' : 'bg-transparent group-hover/resizer:bg-[#c90b0e]/60'}`} />
                             </div>
                           </div>
                         );
@@ -6163,12 +7365,33 @@ export default function App() {
                          return isInPool;
                       });
 
+                      // Beregn FORCE_HOST opfyldelse pr. hold
+                      const activeRowDate = activeRow?.name?.match(/(\d{1,2}\/\d{1,2})/)?.[1] || null;
+                      const forceHostFulfilled = new Map(); // teamId → { tooltip, wishes, assignments }
+                      const applicableWishesForRow = getApplicableWishes(activeRow);
+                      poolTeams.filter(t => !t.isBye).forEach(team => {
+                        const matchingWishes = applicableWishesForRow.filter(w =>
+                          w.ruleType === 'FORCE_HOST' && matchClubName(w.club, team.club)
+                        );
+                        if (matchingWishes.length === 0) return;
+                        const allClubKeys = Object.keys(allHostAssignments);
+                        const matchingKey = allClubKeys.find(k => matchClubName(k, team.club));
+                        const assignments = matchingKey ? allHostAssignments[matchingKey].filter(a => a.date === activeRowDate) : [];
+                        if (assignments.length === 0) return;
+                        if (team.isHost) {
+                          forceHostFulfilled.set(team.id, { tooltip: 'Ønske opfyldt: Klubben er vært i denne pulje', wishes: matchingWishes, assignments });
+                        } else {
+                          const hostPools = assignments.map(a => `${a.poolName} (${a.rowName})`).join(', ');
+                          forceHostFulfilled.set(team.id, { tooltip: `Ønske opfyldt: Klubben er vært i ${hostPools}`, wishes: matchingWishes, assignments });
+                        }
+                      });
+
                       return (
                         <div
                           key={pool.id}
                           id={`pool-col-${pool.id}`}
                           style={{ width: `${columnWidths[pool.id] || 270}px` }}
-                          className={`relative pool-container max-h-full flex flex-col rounded-xl border-2 shadow-sm flex-shrink-0 ${isBeingResized ? '' : 'transition-all duration-200'} ${isDragOver ? 'border-green-500 bg-green-50 scale-[1.02] shadow-lg' : isDragOverHeader ? 'border-blue-500 bg-blue-50 shadow-lg -translate-y-1' : (hasUnresolvedError || hasAnyHostConflict) ? 'border-red-400 bg-red-50/30' : hasSpecificRules ? 'border-blue-300 bg-blue-50/20' : 'border-gray-200 bg-gray-100'}`}
+                          className={`relative pool-container max-h-full flex flex-col rounded-xl border-2 shadow-sm flex-shrink-0 ${isBeingResized ? '' : 'transition-all duration-200'} ${isDragOver ? 'border-blue-500 bg-blue-50 scale-[1.02] shadow-lg' : isDragOverHeader ? 'border-blue-500 bg-blue-50 shadow-lg -translate-y-1' : (hasUnresolvedError || hasAnyHostConflict) ? 'border-red-400 bg-red-50/30' : hasSpecificRules ? 'border-blue-300 bg-blue-50/20' : 'border-gray-200 bg-gray-100'}`}
                         >
                           <div 
                             draggable
@@ -6182,7 +7405,7 @@ export default function App() {
                             <div className="flex justify-between items-center w-full mb-0.5">
                                 <div className="flex items-center gap-2 overflow-hidden flex-1 pr-2">
                                   <GripVertical className="w-4 h-4 text-gray-400 opacity-50 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5" />
-                                  <div className="flex items-center bg-white/50 border border-transparent hover:border-gray-300 focus-within:border-green-500 focus-within:bg-white rounded px-1 -ml-1 transition-all w-full">
+                                  <div className="flex items-center bg-white/50 border border-transparent hover:border-gray-300 focus-within:border-[#c90b0e] focus-within:bg-white rounded px-1 -ml-1 transition-all w-full">
                                     {pool.isLocked && <Lock className="w-3 h-3 text-blue-500 mr-1 flex-shrink-0" />}
                                     <Edit2 className="w-3 h-3 text-gray-400 mr-1 opacity-0 group-hover:opacity-100 flex-shrink-0" />
                                     <input 
@@ -6242,7 +7465,7 @@ export default function App() {
                                   <select
                                     value={currentTemplate || ''}
                                     onChange={(e) => handleTemplateSelect(pool.id, e.target.value)}
-                                    className="flex-1 text-[11px] font-medium text-gray-700 bg-white border border-gray-300 rounded px-1.5 py-1 shadow-sm hover:border-green-400 focus:outline-none focus:border-green-500 cursor-pointer truncate"
+                                    className="flex-1 text-[11px] font-medium text-gray-700 bg-white border border-gray-300 rounded px-1.5 py-1 shadow-sm hover:border-[#c90b0e] focus:outline-none focus:border-[#c90b0e] cursor-pointer truncate"
                                     title="Vælg kampmønster for denne pulje"
                                   >
                                     {availableTemplates.map(tk => (
@@ -6256,10 +7479,55 @@ export default function App() {
 
                           {(poolWishes.length > 0 || hasAnyHostConflict || unresolvedErrors.length > 0 || resolvedErrors.length > 0) && (
                             <div className="flex flex-col">
-                              {poolWishes.map((w, idx) => (
+                              {poolWishes.filter(w => {
+                                // Vis KUN regler der faktisk er brudt i denne pulje
+
+                                if (w.ruleType === 'FORCE_HOST') {
+                                  // Brudt = klubben er IKKE vært nogen steder (på denne dato)
+                                  const isFulfilled = poolTeams.some(t => !t.isBye && matchClubName(t.club, w.club) && forceHostFulfilled.has(t.id));
+                                  return !isFulfilled;
+                                }
+
+                                if (w.ruleType === 'AVOID_HOST') {
+                                  // Brudt = klubben ER vært i denne pulje
+                                  return hostTeam && !hostTeam.isBye && matchClubName(hostTeam.club, w.club);
+                                }
+
+                                if (w.ruleType === 'SAME_POOL') {
+                                  // Brudt = klubbens hold er IKKE alle i samme pulje
+                                  const allClubTeams = activeRow.teams.filter(t => !t.isBye && t.poolId !== null && matchClubName(t.club, w.club));
+                                  if (allClubTeams.length < 2) return false;
+                                  return !allClubTeams.every(t => t.poolId === allClubTeams[0].poolId);
+                                }
+
+                                if (w.ruleType === 'SAME_LOCATION') {
+                                  // Brudt = klubbens hold er fordelt på forskellige lokationer (forskellige værter)
+                                  const allClubTeams = activeRow.teams.filter(t => !t.isBye && t.poolId !== null && matchClubName(t.club, w.club));
+                                  if (allClubTeams.length < 2) return false;
+                                  const poolIds = [...new Set(allClubTeams.map(t => t.poolId))];
+                                  if (poolIds.length <= 1) return false;
+                                  const hostClubs = poolIds.map(pid => {
+                                    const h = activeRow.teams.find(t => t.poolId === pid && t.isHost && !t.isBye);
+                                    return h ? h.club : null;
+                                  });
+                                  return !hostClubs.every(h => h && matchClubName(h, hostClubs[0]));
+                                }
+
+                                if (w.ruleType === 'AVOID_CLUB') {
+                                  // Håndteres af poolErrors-systemet
+                                  return false;
+                                }
+
+                                if (w.ruleType === 'OBS') {
+                                  // OBS-punkter vises altid (info til planlæggeren)
+                                  return true;
+                                }
+
+                                return true;
+                              }).map((w, idx) => (
                                  <div key={`wish-${idx}`} className={`${w.ruleType === 'OBS' ? 'bg-purple-50 border-purple-200' : 'bg-pink-50 border-pink-200'} border-b px-3 py-2 text-[11px] font-medium flex flex-col gap-1.5 shadow-sm`}>
                                     <div className={`flex items-start gap-1.5 ${w.ruleType === 'OBS' ? 'text-purple-800' : 'text-pink-800'}`}>
-                                       <Wand2 className={`w-3.5 h-3.5 flex-shrink-0 mt-0.5 ${w.ruleType === 'OBS' ? 'text-purple-500' : 'text-pink-500'}`} />
+                                       <Wand2 className={`w-3.5 h-3.5 flex-shrink-0 mt-0.5 ${w.ruleType === 'OBS' ? 'text-purple-500' : 'text-[#c90b0e]'}`} />
                                        <span className="leading-snug"><strong>{w.ruleType === 'OBS' ? 'OBS' : 'Regel'} ({w.club}):</strong> {w.text}</span>
                                     </div>
                                  </div>
@@ -6286,7 +7554,7 @@ export default function App() {
                                         </div>
                                         <span className="leading-snug">
                                           <strong>Advarsel:</strong> {hostConflicts.poolHost.club} er vært i flere puljer! 
-                                          {hostConflicts.hasForceHostOverride && <span className="text-pink-600 ml-1">(Ignoreret: Klubben har ønsket at være vært)</span>}
+                                          {hostConflicts.hasForceHostOverride && <span className="text-[#c90b0e] ml-1">(Ignoreret: Klubben har ønsket at være vært)</span>}
                                         </span>
                                      </div>
                                    </div>
@@ -6324,7 +7592,7 @@ export default function App() {
                                         </div>
                                         <span className="leading-snug">
                                           <strong>Advarsel:</strong> {hostConflicts.poolHost.club} har tidligere afholdt stævne i denne række!
-                                          {hostConflicts.hasForceHostOverride && <span className="text-pink-600 ml-1">(Ignoreret: Klubben har ønsket at være vært)</span>}
+                                          {hostConflicts.hasForceHostOverride && <span className="text-[#c90b0e] ml-1">(Ignoreret: Klubben har ønsket at være vært)</span>}
                                         </span>
                                      </div>
                                    </div>
@@ -6409,17 +7677,29 @@ export default function App() {
                                 <GripVertical className={`w-4 h-4 flex-shrink-0 ${hostTeam.isBye && hostTeam.name !== 'Oversidder' ? 'text-blue-400/50' : hostTeam.isBye ? 'text-purple-400/50' : 'text-yellow-600/50'}`} />
                                 {hostTeam.isPinned && <Lock className="w-3 h-3 text-blue-500 flex-shrink-0" />}
                                 <div className="font-semibold truncate text-sm flex-1">{hostTeam.name}</div>
-                                {/* Multi-pool host indikator — åbner sammenlignings-modal */}
-                                {!hostTeam.isBye && allHostAssignments[hostTeam.club]?.length >= 2 && (
+                                {forceHostFulfilled.has(hostTeam.id) && (
+                                  <Tip text={forceHostFulfilled.get(hostTeam.id).tooltip} position="left">
+                                    <button onClick={(e) => { e.stopPropagation(); setWishFulfilledPopup({ ...forceHostFulfilled.get(hostTeam.id), club: hostTeam.club }); }} className="flex items-center text-green-600 hover:text-green-800 transition-colors cursor-pointer"><Check className="w-4 h-4" /></button>
+                                  </Tip>
+                                )}
+                                {/* Multi-pool host indikator — åbner sammenlignings-modal (kun samme dato) */}
+                                {(() => {
+                                  if (hostTeam.isBye || !allHostAssignments[hostTeam.club]) return null;
+                                  const currentDateMatch = activeRow?.name?.match(/(\d{1,2}\/\d{1,2})/);
+                                  const currentDate = currentDateMatch ? currentDateMatch[1] : null;
+                                  const sameDateAssignments = allHostAssignments[hostTeam.club].filter(a => a.date === currentDate);
+                                  if (sameDateAssignments.length < 2) return null;
+                                  return (
                                   <button
-                                    onClick={(e) => { e.stopPropagation(); setMultiPoolCompare({ club: hostTeam.club }); }}
+                                    onClick={(e) => { e.stopPropagation(); setMultiPoolCompare({ club: hostTeam.club, date: currentDate }); }}
                                     className="flex-shrink-0 flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 hover:bg-orange-200 transition-colors"
-                                    title={`Sammenlign puljer — ${hostTeam.club} er vært for ${allHostAssignments[hostTeam.club].length} puljer`}
+                                    title={`Sammenlign puljer — ${hostTeam.club} er vært for ${sameDateAssignments.length} puljer på ${currentDate}`}
                                   >
                                     <Link className="w-3 h-3" />
-                                    <span>{allHostAssignments[hostTeam.club].length}</span>
+                                    <span>{sameDateAssignments.length}</span>
                                   </button>
-                                )}
+                                  );
+                                })()}
                                 <div className="ml-auto flex items-center gap-0.5">
                                   <button onClick={() => handleTogglePin(hostTeam.id)} className={`${hostTeam.isPinned ? 'opacity-100 text-blue-500 hover:text-blue-700' : 'opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600'} transition-opacity p-1`} title={hostTeam.isPinned ? 'Fjern låsen' : 'Lås holdet fast (pulje, plads og rolle)'}>
                                     {hostTeam.isPinned ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
@@ -6428,7 +7708,7 @@ export default function App() {
                                     <Edit2 className="w-3.5 h-3.5" />
                                   </button>
                                   {(hostTeam.isBye && hostTeam.name !== 'Oversidder') && (
-                                    <button onClick={() => handleMakePermanent(hostTeam.id)} className="opacity-0 group-hover:opacity-100 transition-opacity text-green-500 hover:text-green-700 p-1" title="Gør til permanent klub">
+                                    <button onClick={() => handleMakePermanent(hostTeam.id)} className="opacity-0 group-hover:opacity-100 transition-opacity text-[#c90b0e] hover:text-[#9c0f06] p-1" title="Gør til permanent klub">
                                       <UserCheck className="w-3.5 h-3.5" />
                                     </button>
                                   )}
@@ -6469,6 +7749,12 @@ export default function App() {
                                   <GripVertical className={`w-4 h-4 flex-shrink-0 ${isRenamedBye ? 'text-blue-300 group-hover:text-blue-500' : team.isBye ? 'text-purple-300 group-hover:text-purple-500' : 'text-gray-300'}`} />
                                   {team.isPinned && <Lock className="w-3 h-3 text-blue-500 flex-shrink-0" />}
                                   <div className="font-medium truncate text-sm flex-1">{team.name}</div>
+                                  {forceHostFulfilled.has(team.id) && (
+                                    <Tip text={forceHostFulfilled.get(team.id).tooltip} position="left">
+                                      <button onClick={(e) => { e.stopPropagation(); setWishFulfilledPopup({ ...forceHostFulfilled.get(team.id), club: team.club }); }} className="flex items-center text-green-600 hover:text-green-800 transition-colors cursor-pointer"><Check className="w-4 h-4" /></button>
+                                    </Tip>
+                                  )}
+                                  {(() => { const dt = !team.isBye && hostTeam && !team.isHost ? getDriveTime(team.club, hostTeam.club) : null; return dt != null ? (<Tip text={`${dt} min. kørsel til ${hostTeam.club}`} position="left"><span className="flex items-center gap-0.5 text-[10px] text-gray-400 font-medium whitespace-nowrap"><Car className="w-3 h-3" />{dt}m</span></Tip>) : null; })()}
                                   <div className="ml-auto flex items-center gap-0.5">
                                     <button onClick={() => handleTogglePin(team.id)} className={`${team.isPinned ? 'opacity-100 text-blue-500 hover:text-blue-700' : 'opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600'} transition-opacity p-1`} title={team.isPinned ? 'Fjern låsen' : 'Lås holdet fast (pulje og plads)'}>
                                       {team.isPinned ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
@@ -6477,7 +7763,7 @@ export default function App() {
                                       <Edit2 className="w-3.5 h-3.5" />
                                     </button>
                                     {isRenamedBye && (
-                                      <button onClick={() => handleMakePermanent(team.id)} className="opacity-0 group-hover:opacity-100 transition-opacity text-green-500 hover:text-green-700 p-1" title="Gør til permanent klub">
+                                      <button onClick={() => handleMakePermanent(team.id)} className="opacity-0 group-hover:opacity-100 transition-opacity text-[#c90b0e] hover:text-[#9c0f06] p-1" title="Gør til permanent klub">
                                         <UserCheck className="w-3.5 h-3.5" />
                                       </button>
                                     )}
@@ -6504,13 +7790,13 @@ export default function App() {
                             onDoubleClick={(e) => handleColAutoFit(e, pool.id)}
                             title="Træk for at justere. Dobbeltklik for auto-tilpasning."
                           >
-                            <div className={`w-1 h-full transition-colors ${isBeingResized ? 'bg-green-500' : 'bg-transparent group-hover/resizer:bg-green-400'}`} />
+                            <div className={`w-1 h-full transition-colors ${isBeingResized ? 'bg-[#c90b0e]' : 'bg-transparent group-hover/resizer:bg-[#c90b0e]/60'}`} />
                           </div>
                         </div>
                       );
                     })}
 
-                    <button onClick={handleAddPool} className="min-w-[270px] w-[270px] flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:text-green-600 hover:border-green-400 hover:bg-green-50 transition-all gap-2 h-32 mt-0 flex-shrink-0">
+                    <button onClick={handleAddPool} className="min-w-[270px] w-[270px] flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:text-[#c90b0e] hover:border-[#c90b0e]/40 hover:bg-red-50 transition-all gap-2 h-32 mt-0 flex-shrink-0">
                       <Plus className="w-6 h-6" /><span className="font-medium">Tilføj ny pulje</span>
                     </button>
                   </div>
@@ -6531,11 +7817,11 @@ export default function App() {
                     <div className="flex gap-4">
                        <div className="flex-1">
                           <label className="block text-xs font-bold text-gray-600 mb-1">Årgang</label>
-                          <input type="text" value={manualRowData.age} onChange={(e) => setManualRowData({...manualRowData, age: e.target.value})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-green-500 outline-none" placeholder="F.eks. U9"/>
+                          <input type="text" value={manualRowData.age} onChange={(e) => setManualRowData({...manualRowData, age: e.target.value})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-[#c90b0e] outline-none" placeholder="F.eks. U9"/>
                        </div>
                        <div className="flex-1">
                           <label className="block text-xs font-bold text-gray-600 mb-1">Køn</label>
-                          <select value={manualRowData.gender} onChange={(e) => setManualRowData({...manualRowData, gender: e.target.value})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-green-500 outline-none bg-white">
+                          <select value={manualRowData.gender} onChange={(e) => setManualRowData({...manualRowData, gender: e.target.value})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-[#c90b0e] outline-none bg-white">
                              <option value="Drenge">Drenge</option>
                              <option value="Piger">Piger</option>
                              <option value="Mix">Mix</option>
@@ -6546,28 +7832,28 @@ export default function App() {
                     <div className="flex gap-4">
                        <div className="flex-1">
                           <label className="block text-xs font-bold text-gray-600 mb-1">Niveau</label>
-                          <input type="text" value={manualRowData.level} onChange={(e) => setManualRowData({...manualRowData, level: e.target.value})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-green-500 outline-none" placeholder="F.eks. A, B, C"/>
+                          <input type="text" value={manualRowData.level} onChange={(e) => setManualRowData({...manualRowData, level: e.target.value})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-[#c90b0e] outline-none" placeholder="F.eks. A, B, C"/>
                        </div>
                        <div className="flex-1">
                           <label className="block text-xs font-bold text-gray-600 mb-1">Format</label>
-                          <input type="text" value={manualRowData.format} onChange={(e) => setManualRowData({...manualRowData, format: e.target.value})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-green-500 outline-none" placeholder="F.eks. 5:5, 3:3"/>
+                          <input type="text" value={manualRowData.format} onChange={(e) => setManualRowData({...manualRowData, format: e.target.value})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-[#c90b0e] outline-none" placeholder="F.eks. 5:5, 3:3"/>
                        </div>
                     </div>
 
                     <div>
                        <label className="block text-xs font-bold text-gray-600 mb-1">Spilledato</label>
-                       <input type="text" value={manualRowData.date} onChange={(e) => setManualRowData({...manualRowData, date: e.target.value})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-green-500 outline-none" placeholder="F.eks. 26/10"/>
+                       <input type="text" value={manualRowData.date} onChange={(e) => setManualRowData({...manualRowData, date: e.target.value})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-[#c90b0e] outline-none" placeholder="F.eks. 26/10"/>
                     </div>
 
                     <div>
                        <label className="block text-xs font-bold text-gray-600 mb-1">Antal hold fra start (kan være 0)</label>
-                       <input type="number" min="0" value={manualRowData.initialTeams} onChange={(e) => setManualRowData({...manualRowData, initialTeams: parseInt(e.target.value) || 0})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-green-500 outline-none"/>
+                       <input type="number" min="0" value={manualRowData.initialTeams} onChange={(e) => setManualRowData({...manualRowData, initialTeams: parseInt(e.target.value) || 0})} className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-[#c90b0e] outline-none"/>
                     </div>
                  </div>
 
                  <div className="flex gap-3">
                     <button onClick={() => setAddManualRowPrompt(false)} className="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition-colors">Annuller</button>
-                    <button onClick={executeAddManualRow} className="flex-1 bg-green-600 text-white py-2.5 rounded-lg font-medium hover:bg-green-700 transition-colors shadow-sm">Opret række</button>
+                    <button onClick={executeAddManualRow} className="flex-1 bg-[#c90b0e] text-white py-2.5 rounded-lg font-medium hover:bg-[#9c0f06] transition-colors shadow-sm">Opret række</button>
                  </div>
               </div>
            </div>
@@ -6620,10 +7906,13 @@ export default function App() {
            </div>
         )}
 
-        {/* Multi-pool sammenlignings-modal */}
-        {multiPoolCompare && allHostAssignments[multiPoolCompare.club]?.length >= 2 && (() => {
+        {/* Multi-pool sammenlignings-modal (kun samme dato) */}
+        {multiPoolCompare && (() => {
           const club = multiPoolCompare.club;
-          const assignments = allHostAssignments[club];
+          const compareDate = multiPoolCompare.date;
+          const allAssignments = allHostAssignments[club] || [];
+          const assignments = compareDate ? allAssignments.filter(a => a.date === compareDate) : allAssignments;
+          if (assignments.length < 2) return null;
 
           // Hent hold for hver pulje + andre hold i rækken
           const poolColumns = assignments.map(a => {
@@ -6678,7 +7967,7 @@ export default function App() {
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-gray-800">{club}</h3>
-                      <p className="text-sm text-gray-500">Vært for {assignments.length} puljer — sammenlign hold på tværs</p>
+                      <p className="text-sm text-gray-500">Vært for {assignments.length} puljer{compareDate ? ` d. ${compareDate}` : ''} — sammenlign hold på tværs</p>
                     </div>
                   </div>
                   <button onClick={() => { setMultiPoolCompare(null); setCompareExpandedCols(new Set()); }} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
@@ -6792,7 +8081,7 @@ export default function App() {
                                             <div className="text-xs text-gray-600 truncate flex-1">{team.name}</div>
                                             <button
                                               onClick={() => moveTeamToPoolForRow(col.rowId, team.id, col.poolId)}
-                                              className="p-1 rounded text-green-400 hover:text-green-600 hover:bg-green-50 transition-colors"
+                                              className="p-1 rounded text-[#c90b0e]/60 hover:text-[#c90b0e] hover:bg-red-50 transition-colors"
                                               title="Tilføj til pulje"
                                             >
                                               <Plus className="w-3.5 h-3.5" />
@@ -6840,7 +8129,7 @@ export default function App() {
                   {sharedClubs.length > 0 && (
                     <div className="mt-6 pt-4 border-t border-gray-200">
                       <div className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                        <Users className="w-4 h-4 text-green-600" />
+                        <Users className="w-4 h-4 text-[#c90b0e]" />
                         Fælles klubber på tværs af puljerne
                       </div>
                       <div className="flex flex-wrap gap-2">
@@ -6859,6 +8148,87 @@ export default function App() {
             </div>
           );
         })()}
+
+        {/* Ønske-opfyldt popup (grønt tjek klikket) */}
+        {wishFulfilledPopup && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setWishFulfilledPopup(null)}>
+            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-red-50 rounded-t-2xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
+                    <Check className="w-5 h-5 text-[#c90b0e]" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-800">Ønske opfyldt</h3>
+                    <p className="text-sm text-gray-500">{wishFulfilledPopup.club}</p>
+                  </div>
+                </div>
+                <button onClick={() => setWishFulfilledPopup(null)} className="p-2 rounded-lg hover:bg-red-100 text-gray-400 hover:text-gray-600 transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="px-6 py-4 space-y-4 max-h-[60vh] overflow-y-auto">
+                {/* Status */}
+                <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2.5 text-sm text-green-800">
+                  <Check className="w-4 h-4 flex-shrink-0" />
+                  <span>{wishFulfilledPopup.tooltip}</span>
+                </div>
+
+                {/* Ønsker */}
+                <div>
+                  <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Ønsker der er opfyldt</h4>
+                  <div className="space-y-2">
+                    {wishFulfilledPopup.wishes.map((w, i) => (
+                      <div key={i} className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-pink-100 text-pink-700">{w.ruleType}</span>
+                          <span className="text-xs font-medium text-gray-600">{w.club}</span>
+                        </div>
+                        {w.wishText && (
+                          <div className="text-sm text-gray-800 mb-1.5">{w.wishText}</div>
+                        )}
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                          {w.category && <span><strong>Kategori:</strong> {w.category}</span>}
+                          {w.date && <span><strong>Dato:</strong> {w.date}</span>}
+                          {w.contact && <span><strong>Kontakt:</strong> {w.contact}</span>}
+                          {w.age && <span><strong>Årgang:</strong> {w.age}</span>}
+                          {w.gender && <span><strong>Køn:</strong> {w.gender}</span>}
+                          {w.level && <span><strong>Niveau:</strong> {w.level}</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Værtskabs-tildelinger */}
+                {wishFulfilledPopup.assignments && wishFulfilledPopup.assignments.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Værtskab tildelt i</h4>
+                    <div className="space-y-1.5">
+                      {wishFulfilledPopup.assignments.map((a, i) => (
+                        <div key={i} className="flex items-center gap-2 border border-yellow-200 rounded-lg px-3 py-2 bg-yellow-50">
+                          <MapPin className="w-3.5 h-3.5 text-yellow-600 flex-shrink-0" />
+                          <span className="text-sm font-medium text-yellow-900">{a.poolName}</span>
+                          <span className="text-xs text-yellow-600">({a.rowName})</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-3 border-t border-gray-200 flex justify-end">
+                <button onClick={() => setWishFulfilledPopup(null)} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors text-sm">
+                  Luk
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {matrixPreview.isOpen && matrixPreview.templateKey && (fodaMatrices[matrixPreview.templateKey] || fodaMatrices3v3[matrixPreview.templateKey]) && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setMatrixPreview({isOpen: false, templateKey: null})}>
@@ -6897,7 +8267,7 @@ export default function App() {
                 <div className="bg-white rounded-xl p-6 max-w-4xl w-full shadow-2xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
                    <div className="flex justify-between items-center mb-6 border-b pb-4">
                       <div className="flex items-center gap-3">
-                        <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2"><Grid className="w-6 h-6 text-green-600" /> Oversigt: {matrixPreview.templateKey}</h3>
+                        <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2"><Grid className="w-6 h-6 text-[#c90b0e]" /> Oversigt: {matrixPreview.templateKey}</h3>
                         <button onClick={() => {
                           const is3v3Template = !!fodaMatrices3v3[matrixPreview.templateKey];
                           if (is3v3Template) { setSelectedFodaTemplate3v3(matrixPreview.templateKey); } else { setSelectedFodaTemplate(matrixPreview.templateKey); }
@@ -7000,7 +8370,7 @@ export default function App() {
                        </div>
                      )}
                    </div>
-                   <button onClick={() => setMatrixPreview({isOpen: false, templateKey: null})} className="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition-colors shadow-sm mt-4">Forstået, luk oversigt</button>
+                   <button onClick={() => setMatrixPreview({isOpen: false, templateKey: null})} className="w-full bg-[#c90b0e] text-white py-3 rounded-lg font-bold hover:bg-[#9c0f06] transition-colors shadow-sm mt-4">Forstået, luk oversigt</button>
                 </div>
               );
             })()}
@@ -7056,7 +8426,7 @@ export default function App() {
 
               <div className="flex gap-3">
                 <button onClick={() => setCreatePoolsPrompt({ isOpen: false, count: 1, scope: null, mode: 'randomize' })} className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-200 transition-colors">Annuller</button>
-                <button onClick={handleCreatePoolsAndRandomize} className={`flex-1 py-3 rounded-lg font-medium transition-colors shadow-sm ${createPoolsPrompt.mode === 'hostsOnly' ? 'bg-yellow-500 text-white hover:bg-yellow-600' : 'bg-green-600 text-white hover:bg-green-700'}`}>{createPoolsPrompt.mode === 'hostsOnly' ? (createPoolsPrompt.scope === 'all' ? 'Opret og Fordel værter (alle)' : 'Opret og Fordel værter') : 'Opret og Fordel'}</button>
+                <button onClick={handleCreatePoolsAndRandomize} className={`flex-1 py-3 rounded-lg font-medium transition-colors shadow-sm ${createPoolsPrompt.mode === 'hostsOnly' ? 'bg-yellow-500 text-white hover:bg-yellow-600' : 'bg-[#c90b0e] text-white hover:bg-[#9c0f06]'}`}>{createPoolsPrompt.mode === 'hostsOnly' ? (createPoolsPrompt.scope === 'all' ? 'Opret og Fordel værter (alle)' : 'Opret og Fordel værter') : 'Opret og Fordel'}</button>
               </div>
             </div>
           </div>
@@ -7091,14 +8461,94 @@ export default function App() {
           </div>
         )}
 
+        {processingModal.isOpen && (
+          <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl p-8 max-w-sm w-full shadow-2xl text-center">
+              <Loader2 className="w-10 h-10 text-[#c90b0e] animate-spin mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-gray-800 mb-2">{processingModal.message}</h3>
+              <p className="text-sm text-gray-500">Op til {processingModal.maxAttempts} forsøg — max 5 sekunder</p>
+            </div>
+          </div>
+        )}
+
+        {hostCheckModal.isOpen && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl">
+              <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-red-500" />
+                Kan ikke fordele øvrige hold
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Alle puljer skal have en værtsklub før de øvrige hold kan fordeles. Brug "Fordel værter" først.
+              </p>
+              <div className="space-y-1.5 mb-4 max-h-60 overflow-y-auto">
+                {hostCheckModal.issues.map((issue, i) => (
+                  <div key={i} className="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded-md text-xs">
+                    <AlertTriangle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+                    <span className="text-red-800">{issue.message}</span>
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => setHostCheckModal({ isOpen: false, issues: [] })} className="w-full py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors">
+                Luk
+              </button>
+            </div>
+          </div>
+        )}
+
+        {distributeRemainingPopup.isOpen && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl">
+              <h3 className="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2">
+                <Shuffle className="w-5 h-5 text-[#c90b0e]" />
+                Fordel øvrige hold
+              </h3>
+              <p className="text-gray-600 mb-5 text-sm">
+                De øvrige hold fordeles i puljerne ud fra kørselstid, ønsker og banekapacitet. Værter skal være tildelt først.
+              </p>
+              <label className="flex items-center gap-2 mb-6 cursor-pointer select-none bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+                <input
+                  type="checkbox"
+                  checked={distributeRemainingPopup.allRows}
+                  onChange={(e) => setDistributeRemainingPopup(p => ({...p, allRows: e.target.checked}))}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                />
+                <span className="text-sm text-gray-700 font-medium">Gælder for alle rækker</span>
+              </label>
+              <div className="flex gap-3">
+                <button onClick={() => setDistributeRemainingPopup({ isOpen: false, allRows: false })}
+                  className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-200 transition-colors">
+                  Annuller
+                </button>
+                <button onClick={() => {
+                  const scope = distributeRemainingPopup.allRows ? 'all' : 'active';
+                  setDistributeRemainingPopup({ isOpen: false, allRows: false });
+                  handleDistributeRemaining(scope);
+                }} className="flex-1 bg-[#c90b0e] text-white py-3 rounded-lg font-medium hover:bg-[#9c0f06] transition-colors shadow-sm">
+                  Fordel øvrige
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {reshufflePrompt.isOpen && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl">
               <h3 className="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2"><Shuffle className="w-6 h-6 text-blue-600" /> Omfordeling af hold</h3>
-              <p className="text-gray-600 mb-6">Der er allerede hold placeret i {reshufflePrompt.scope === 'active' ? 'denne rækkes' : 'rækkernes'} puljer. Vil du beholde dem, eller skal rækken nulstilles og alle hold blandes forfra?</p>
+              <p className="text-gray-600 mb-6">Der er allerede hold placeret i {reshufflePrompt.scope === 'active' ? 'denne rækkes' : 'rækkernes'} puljer. {reshufflePrompt.mode === 'remaining' ? 'Vil du nulstille de øvrige hold og omfordele dem, eller kun fordele de hold der mangler en pulje?' : 'Vil du beholde dem, eller skal rækken nulstilles og alle hold blandes forfra?'}</p>
               <div className="flex flex-col gap-3">
-                <button onClick={() => { const s = reshufflePrompt.scope; setReshufflePrompt({ isOpen: false, scope: null }); executeRandomizeWithRetry('all', s); }} className="w-full bg-red-50 text-red-700 border border-red-200 py-2.5 rounded-lg font-medium hover:bg-red-100 transition-colors flex justify-center items-center gap-2">Nulstil og omfordel ALLE hold</button>
-                <button onClick={() => { const s = reshufflePrompt.scope; setReshufflePrompt({ isOpen: false, scope: null }); executeRandomizeWithRetry('unassigned', s); }} className="w-full bg-blue-50 text-blue-700 border border-blue-200 py-2.5 rounded-lg font-medium hover:bg-blue-100 transition-colors flex justify-center items-center gap-2">Fordel kun de hold der ikke har en pulje endnu</button>
+                {reshufflePrompt.mode === 'remaining' ? (
+                  <>
+                    <button onClick={() => { const s = reshufflePrompt.scope; setReshufflePrompt({ isOpen: false, scope: null }); executeDistributeRemainingWithRetry(s, true); }} className="w-full bg-red-50 text-red-700 border border-red-200 py-2.5 rounded-lg font-medium hover:bg-red-100 transition-colors flex justify-center items-center gap-2">Nulstil øvrige og omfordel (værter bevares)</button>
+                    <button onClick={() => { const s = reshufflePrompt.scope; setReshufflePrompt({ isOpen: false, scope: null }); executeDistributeRemainingWithRetry(s); }} className="w-full bg-blue-50 text-blue-700 border border-blue-200 py-2.5 rounded-lg font-medium hover:bg-blue-100 transition-colors flex justify-center items-center gap-2">Fordel kun de hold der ikke har en pulje endnu</button>
+                  </>
+                ) : (
+                  <>
+                    <button onClick={() => { const s = reshufflePrompt.scope; setReshufflePrompt({ isOpen: false, scope: null }); executeRandomizeWithRetry('all', s); }} className="w-full bg-red-50 text-red-700 border border-red-200 py-2.5 rounded-lg font-medium hover:bg-red-100 transition-colors flex justify-center items-center gap-2">Nulstil og omfordel ALLE hold</button>
+                    <button onClick={() => { const s = reshufflePrompt.scope; setReshufflePrompt({ isOpen: false, scope: null }); executeRandomizeWithRetry('unassigned', s); }} className="w-full bg-blue-50 text-blue-700 border border-blue-200 py-2.5 rounded-lg font-medium hover:bg-blue-100 transition-colors flex justify-center items-center gap-2">Fordel kun de hold der ikke har en pulje endnu</button>
+                  </>
+                )}
                 <button onClick={() => setReshufflePrompt({ isOpen: false, scope: null })} className="w-full mt-2 bg-gray-100 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition-colors">Annuller</button>
               </div>
             </div>
@@ -7122,42 +8572,42 @@ export default function App() {
 
                 <div className={`space-y-3 pl-2 transition-opacity duration-200 ${poolSettingsPrompt.criteria.useSpecific ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
                   <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" className="w-4 h-4 accent-green-600" checked={poolSettingsPrompt.criteria.avoidSameClub} onChange={(e) => setPoolSettingsPrompt(prev => ({ ...prev, criteria: { ...prev.criteria, avoidSameClub: e.target.checked } }))} />
+                    <input type="checkbox" className="w-4 h-4 accent-[#c90b0e]" checked={poolSettingsPrompt.criteria.avoidSameClub} onChange={(e) => setPoolSettingsPrompt(prev => ({ ...prev, criteria: { ...prev.criteria, avoidSameClub: e.target.checked } }))} />
                     <span className="text-gray-700 flex items-center gap-1.5"><Shield className="w-4 h-4 text-blue-500" /> Ingen hold fra samme klub</span>
                   </label>
                   {!isEditingOrgPool && (<>
                   <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" className="w-4 h-4 accent-green-600" checked={poolSettingsPrompt.criteria.autoAssignHost} onChange={(e) => setPoolSettingsPrompt(prev => ({ ...prev, criteria: { ...prev.criteria, autoAssignHost: e.target.checked } }))} />
+                    <input type="checkbox" className="w-4 h-4 accent-[#c90b0e]" checked={poolSettingsPrompt.criteria.autoAssignHost} onChange={(e) => setPoolSettingsPrompt(prev => ({ ...prev, criteria: { ...prev.criteria, autoAssignHost: e.target.checked } }))} />
                     <span className="text-gray-700 flex items-center gap-1.5"><UserCheck className="w-4 h-4 text-purple-500" /> Udvælg automatisk Værtsklub i denne</span>
                   </label>
                   <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" className="w-4 h-4 accent-green-600" checked={poolSettingsPrompt.criteria.hostGetsMostMatches} onChange={(e) => setPoolSettingsPrompt(prev => ({ ...prev, criteria: { ...prev.criteria, hostGetsMostMatches: e.target.checked } }))} />
+                    <input type="checkbox" className="w-4 h-4 accent-[#c90b0e]" checked={poolSettingsPrompt.criteria.hostGetsMostMatches} onChange={(e) => setPoolSettingsPrompt(prev => ({ ...prev, criteria: { ...prev.criteria, hostGetsMostMatches: e.target.checked } }))} />
                     <span className="text-gray-700 flex items-center gap-1.5"><Key className="w-4 h-4 text-amber-500" /> Værtsklub skal have flest kampe</span>
                   </label>
                   <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" className="w-4 h-4 accent-green-600" checked={poolSettingsPrompt.criteria.avoidMultipleHostsOnSameDate ?? true} onChange={(e) => setPoolSettingsPrompt(prev => ({ ...prev, criteria: { ...prev.criteria, avoidMultipleHostsOnSameDate: e.target.checked } }))} />
+                    <input type="checkbox" className="w-4 h-4 accent-[#c90b0e]" checked={poolSettingsPrompt.criteria.avoidMultipleHostsOnSameDate ?? true} onChange={(e) => setPoolSettingsPrompt(prev => ({ ...prev, criteria: { ...prev.criteria, avoidMultipleHostsOnSameDate: e.target.checked } }))} />
                     <span className="text-gray-700 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-rose-500" /> Undgå samme vært flere gange på samme dato</span>
                   </label>
                   <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" className="w-4 h-4 accent-green-600" checked={poolSettingsPrompt.criteria.avoidPreviousHosts ?? true} onChange={(e) => setPoolSettingsPrompt(prev => ({ ...prev, criteria: { ...prev.criteria, avoidPreviousHosts: e.target.checked } }))} />
+                    <input type="checkbox" className="w-4 h-4 accent-[#c90b0e]" checked={poolSettingsPrompt.criteria.avoidPreviousHosts ?? true} onChange={(e) => setPoolSettingsPrompt(prev => ({ ...prev, criteria: { ...prev.criteria, avoidPreviousHosts: e.target.checked } }))} />
                     <span className="text-gray-700 flex items-center gap-1.5"><History className="w-4 h-4 text-teal-500" /> Undgå at vælge tidligere værtsklubber</span>
                   </label>
                   <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" className="w-4 h-4 accent-green-600" checked={poolSettingsPrompt.criteria.avoidInsufficientBaneCapacity ?? true} onChange={(e) => setPoolSettingsPrompt(prev => ({ ...prev, criteria: { ...prev.criteria, avoidInsufficientBaneCapacity: e.target.checked } }))} />
+                    <input type="checkbox" className="w-4 h-4 accent-[#c90b0e]" checked={poolSettingsPrompt.criteria.avoidInsufficientBaneCapacity ?? true} onChange={(e) => setPoolSettingsPrompt(prev => ({ ...prev, criteria: { ...prev.criteria, avoidInsufficientBaneCapacity: e.target.checked } }))} />
                     <span className="text-gray-700 flex items-center gap-1.5"><Shield className="w-4 h-4 text-red-500" /> Undgå vært uden nok baner</span>
                   </label>
                   <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" className="w-4 h-4 accent-green-600" checked={poolSettingsPrompt.criteria.prioritizeNewHostInAgeGroup ?? true} onChange={(e) => setPoolSettingsPrompt(prev => ({ ...prev, criteria: { ...prev.criteria, prioritizeNewHostInAgeGroup: e.target.checked } }))} />
+                    <input type="checkbox" className="w-4 h-4 accent-[#c90b0e]" checked={poolSettingsPrompt.criteria.prioritizeNewHostInAgeGroup ?? true} onChange={(e) => setPoolSettingsPrompt(prev => ({ ...prev, criteria: { ...prev.criteria, prioritizeNewHostInAgeGroup: e.target.checked } }))} />
                     <span className="text-gray-700 flex items-center gap-1.5"><Star className="w-4 h-4 text-yellow-500" /> Prioriter ny vært i årgangen</span>
                   </label>
                   </>)}
                   <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" className="w-4 h-4 accent-green-600" checked={poolSettingsPrompt.criteria.checkBaneCapacity ?? true} onChange={(e) => setPoolSettingsPrompt(prev => ({ ...prev, criteria: { ...prev.criteria, checkBaneCapacity: e.target.checked } }))} />
+                    <input type="checkbox" className="w-4 h-4 accent-[#c90b0e]" checked={poolSettingsPrompt.criteria.checkBaneCapacity ?? true} onChange={(e) => setPoolSettingsPrompt(prev => ({ ...prev, criteria: { ...prev.criteria, checkBaneCapacity: e.target.checked } }))} />
                     <span className="text-gray-700 flex items-center gap-1.5"><Grid className="w-4 h-4 text-orange-500" /> Tjek banekapacitet</span>
                   </label>
                   <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" className="w-4 h-4 accent-green-600" checked={poolSettingsPrompt.criteria.preferGeographicProximity ?? true} onChange={(e) => setPoolSettingsPrompt(prev => ({ ...prev, criteria: { ...prev.criteria, preferGeographicProximity: e.target.checked } }))} />
-                    <span className="text-gray-700 flex items-center gap-1.5"><MapPin className="w-4 h-4 text-green-500" /> Geografisk nærhed</span>
+                    <input type="checkbox" className="w-4 h-4 accent-[#c90b0e]" checked={poolSettingsPrompt.criteria.preferGeographicProximity ?? true} onChange={(e) => setPoolSettingsPrompt(prev => ({ ...prev, criteria: { ...prev.criteria, preferGeographicProximity: e.target.checked } }))} />
+                    <span className="text-gray-700 flex items-center gap-1.5"><MapPin className="w-4 h-4 text-[#c90b0e]" /> Geografisk nærhed</span>
                   </label>
                 </div>
               </div>
@@ -7182,7 +8632,7 @@ export default function App() {
 
               <div className="flex gap-3">
                 <button onClick={() => setPoolSettingsPrompt({ isOpen: false, poolId: null, poolName: '', criteria: null })} className="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition-colors">Annuller</button>
-                <button onClick={savePoolSettings} className="flex-1 bg-green-600 text-white py-2.5 rounded-lg font-medium hover:bg-green-700 transition-colors shadow-sm">Gem indstillinger</button>
+                <button onClick={savePoolSettings} className="flex-1 bg-[#c90b0e] text-white py-2.5 rounded-lg font-medium hover:bg-[#9c0f06] transition-colors shadow-sm">Gem indstillinger</button>
               </div>
             </div>
           </div>
@@ -7219,10 +8669,10 @@ export default function App() {
                     </div>
                   </label>
 
-                  <label className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${hostModePopup.currentMode === 'organizer' ? 'border-green-400 bg-green-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                  <label className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${hostModePopup.currentMode === 'organizer' ? 'border-[#c90b0e] bg-red-50' : 'border-gray-200 hover:border-gray-300'}`}>
                     <input type="radio" name="hostMode" value="organizer" checked={hostModePopup.currentMode === 'organizer'}
                       onChange={() => setHostModePopup(prev => ({ ...prev, currentMode: 'organizer' }))}
-                      className="accent-green-500 w-4 h-4" />
+                      className="accent-[#c90b0e] w-4 h-4" />
                     <div>
                       <div className="font-semibold text-gray-800">Arrangørklub</div>
                       <div className="text-xs text-gray-500">Ekstern klub stiller baner til rådighed (spiller ikke med)</div>
@@ -7236,7 +8686,7 @@ export default function App() {
                     <select
                       value={hostModePopup.organizerClub || ''}
                       onChange={(e) => setHostModePopup(prev => ({ ...prev, organizerClub: e.target.value || null }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c90b0e] focus:border-[#c90b0e] outline-none text-sm"
                     >
                       <option value="">-- Vælg klub --</option>
                       {uniqueClubsForPopup.map(c => <option key={c} value={c}>{c}</option>)}
@@ -7250,7 +8700,7 @@ export default function App() {
                     Annuller
                   </button>
                   <button onClick={saveHostMode}
-                    className={`flex-1 py-2.5 rounded-lg font-medium transition-colors shadow-sm ${hostModePopup.currentMode === 'organizer' && !hostModePopup.organizerClub ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'}`}
+                    className={`flex-1 py-2.5 rounded-lg font-medium transition-colors shadow-sm ${hostModePopup.currentMode === 'organizer' && !hostModePopup.organizerClub ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[#c90b0e] text-white hover:bg-[#9c0f06]'}`}
                     disabled={hostModePopup.currentMode === 'organizer' && !hostModePopup.organizerClub}>
                     Gem
                   </button>
@@ -7390,7 +8840,7 @@ export default function App() {
               <select 
                 value={selectedTransferRow} 
                 onChange={e => setSelectedTransferRow(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg p-2.5 mb-6 focus:ring-2 focus:ring-green-500 outline-none cursor-pointer"
+                className="w-full border border-gray-300 rounded-lg p-2.5 mb-6 focus:ring-2 focus:ring-[#c90b0e] outline-none cursor-pointer"
               >
                 {data.filter(r => r.id !== activeRowId).map(r => (
                   <option key={r.id} value={r.id}>{r.name}</option>
@@ -7503,12 +8953,38 @@ export default function App() {
                   <ShieldCheck className="w-6 h-6 text-blue-600" />
                   Validering af fordeling
                 </h3>
-                <p className="text-gray-600 mb-4 text-sm">
+                <p className="text-gray-600 mb-2 text-sm">
                   {allConflicts.length === 0
                     ? 'Ingen konflikter fundet! Alle puljer ser gode ud.'
                     : `${unresolvedCount} uløst${unresolvedCount !== 1 ? 'e' : ''} konflikt${unresolvedCount !== 1 ? 'er' : ''} fundet.`
                   }
                 </p>
+
+                {/* Smart distribute metadata */}
+                {smartDistributeResult && (
+                  <div className="mb-3 space-y-1">
+                    <p className="text-xs text-gray-500">
+                      {smartDistributeResult.conflicts.length === 0
+                        ? `Fandt løsning uden konflikter efter ${smartDistributeResult.attempts} forsøg.`
+                        : `Bedste resultat efter ${smartDistributeResult.attempts} forsøg — ${smartDistributeResult.conflicts.length} konflikt${smartDistributeResult.conflicts.length !== 1 ? 'er' : ''} tilbage.`
+                      }
+                    </p>
+                    {smartDistributeResult.maxGuestDriveTimes && Object.keys(smartDistributeResult.maxGuestDriveTimes).length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {Object.entries(smartDistributeResult.maxGuestDriveTimes).map(([rowId, maxTime]) => {
+                          const rowName = rowsToCheck.find(r => r.id === rowId)?.name || rowId;
+                          const shortName = rowName.replace(/\s*-?\s*\d{1,2}\/\d{1,2}.*/, '').trim();
+                          return (
+                            <span key={rowId} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium border ${maxTime > 40 ? 'bg-orange-50 border-orange-300 text-orange-700' : maxTime > 30 ? 'bg-yellow-50 border-yellow-300 text-yellow-700' : 'bg-green-50 border-green-300 text-green-700'}`}>
+                              {shortName}: max {Math.round(maxTime)} min
+                              {maxTime > 40 && <Tip text={`Lang kørselstid: ${Math.round(maxTime)} min.`} position="top"><AlertTriangle className="w-3 h-3" /></Tip>}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {allConflicts.length === 0 ? (
                   <div className="flex-1 overflow-y-auto space-y-4 pr-1 -mr-1">
@@ -7697,10 +9173,10 @@ export default function App() {
 
                 <div className="pt-4 border-t border-gray-200 mt-4 flex-shrink-0">
                   <button
-                    onClick={() => setValidationModal({ isOpen: false, scope: null })}
+                    onClick={() => { setValidationModal({ isOpen: false, scope: null }); setSmartDistributeResult(null); }}
                     className={`w-full py-2.5 rounded-lg font-medium transition-colors ${
                       unresolvedCount === 0
-                        ? 'bg-green-600 text-white hover:bg-green-700'
+                        ? 'bg-[#c90b0e] text-white hover:bg-[#9c0f06]'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
@@ -7717,7 +9193,7 @@ export default function App() {
         {pdfPages.map((page, pageIdx) => (
           <div key={`page-${pageIdx}`} id={`pdf-page-${pageIdx}`} className="flex flex-col bg-white" style={{ height: '793px', width: '1122px', padding: '38px', boxSizing: 'border-box', overflow: 'hidden' }}>
             {pageIdx === 0 && (
-              <div className="border-b-2 border-green-700 pb-2 mb-4 flex items-center gap-2">
+              <div className="border-b-2 border-[#c90b0e] pb-2 mb-4 flex items-center gap-2">
                 <span className="text-lg">⚽</span>
                 <h1 className="text-lg font-bold text-gray-900">
                   Samlet Stævneplan <span className="font-normal text-gray-600 text-sm ml-1">{pdfDatesText}</span>
@@ -7766,10 +9242,10 @@ export default function App() {
                     </div>
 
                         {isOrgModePdf ? (
-                          <div className="p-1.5 border-b border-gray-200 flex items-center gap-1.5 bg-green-50">
-                            <MapPin className="w-3.5 h-3.5 text-green-600 flex-shrink-0" />
+                          <div className="p-1.5 border-b border-gray-200 flex items-center gap-1.5 bg-red-50">
+                            <MapPin className="w-3.5 h-3.5 text-[#c90b0e] flex-shrink-0" />
                             <div className="w-full overflow-hidden">
-                              <div className="text-[8px] font-semibold uppercase leading-none mb-0.5 text-green-800">Arrangørklub</div>
+                              <div className="text-[8px] font-semibold uppercase leading-none mb-0.5 text-red-800">Arrangørklub</div>
                               <div className="font-bold text-[11px] text-gray-900 leading-none truncate">
                                 {pool.organizerClub || 'Ikke valgt'}
                               </div>
@@ -7830,28 +9306,28 @@ export default function App() {
       </div>
       {/* === INTERAKTIV GUIDE-WIZARD (flytbar) === */}
       {guideStep !== null && (
-        <div className="fixed z-[100] bg-white rounded-2xl shadow-2xl border-2 border-green-300 overflow-visible select-none flex flex-col"
+        <div className="fixed z-[100] bg-white rounded-2xl shadow-2xl border-2 border-[#c90b0e]/30 overflow-visible select-none flex flex-col"
              style={{ width: guideSize.w, ...(guideSize.h ? { height: guideSize.h } : {}), top: `calc(4rem + ${guideDrag.y}px)`, left: `calc(50% - ${guideSize.w / 2}px + ${guideDrag.x}px)` }}>
 
           {/* Resize-håndtag: venstre kant */}
-          <div className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize z-10 hover:bg-green-400/20 rounded-l-2xl"
+          <div className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize z-10 hover:bg-[#c90b0e]/20 rounded-l-2xl"
                onMouseDown={(e) => handleGuideResizeStart(e, 'left')} />
           {/* Resize-håndtag: højre kant */}
-          <div className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize z-10 hover:bg-green-400/20 rounded-r-2xl"
+          <div className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize z-10 hover:bg-[#c90b0e]/20 rounded-r-2xl"
                onMouseDown={(e) => handleGuideResizeStart(e, 'right')} />
           {/* Resize-håndtag: bund */}
-          <div className="absolute left-0 right-0 bottom-0 h-2 cursor-ns-resize z-10 hover:bg-green-400/20 rounded-b-2xl"
+          <div className="absolute left-0 right-0 bottom-0 h-2 cursor-ns-resize z-10 hover:bg-[#c90b0e]/20 rounded-b-2xl"
                onMouseDown={(e) => handleGuideResizeStart(e, 'bottom')} />
           {/* Resize-håndtag: nederste højre hjørne */}
           <div className="absolute right-0 bottom-0 w-5 h-5 cursor-nwse-resize z-20 flex items-center justify-center"
                onMouseDown={(e) => handleGuideResizeStart(e, 'corner')}>
-            <svg width="10" height="10" viewBox="0 0 10 10" className="text-green-400 opacity-60 hover:opacity-100 transition-opacity">
+            <svg width="10" height="10" viewBox="0 0 10 10" className="text-[#c90b0e] opacity-60 hover:opacity-100 transition-opacity">
               <path d="M9 1L1 9M9 5L5 9M9 9L9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
           </div>
 
           {/* Header med Bolden-maskot */}
-          <div className="bg-gradient-to-r from-green-700 to-green-600 text-white flex items-center gap-3 cursor-grab active:cursor-grabbing rounded-t-xl overflow-hidden flex-shrink-0"
+          <div className="bg-gradient-to-r from-[#1d1d1d] to-[#2a2a2a] text-white flex items-center gap-3 cursor-grab active:cursor-grabbing rounded-t-xl overflow-hidden flex-shrink-0"
                style={{ padding: `${10 * guideScale}px ${16 * guideScale}px` }}
                onMouseDown={handleGuideDragStart}>
             <div className="relative flex-shrink-0" style={{ width: 40 * guideScale, height: 40 * guideScale }}>
@@ -7872,21 +9348,21 @@ export default function App() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-bold truncate" style={{ fontSize: 14 * guideScale }}>{GUIDE_STEPS[guideStep - 1].titel}</div>
-              <div className="text-green-200 font-medium" style={{ fontSize: 10 * guideScale }}>Bolden guider dig — trin {guideStep} af {GUIDE_STEPS.length}</div>
+              <div className="text-gray-400 font-medium" style={{ fontSize: 10 * guideScale }}>Bolden guider dig — trin {guideStep} af {GUIDE_STEPS.length}</div>
             </div>
             <span className="text-white/70 flex-shrink-0 cursor-grab" style={{ fontSize: 10 * guideScale }} title="Træk mig rundt!">&#x2630;</span>
           </div>
 
           {/* Tekst-indhold — scrollbar hvis højde er sat */}
-          <div className="bg-green-50/30 flex-1 overflow-auto" style={{ padding: `${16 * guideScale}px ${20 * guideScale}px` }}>
+          <div className="bg-red-50/30 flex-1 overflow-auto" style={{ padding: `${16 * guideScale}px ${20 * guideScale}px` }}>
             <p className="text-gray-700 leading-relaxed" style={{ fontSize: 14 * guideScale }}>{GUIDE_STEPS[guideStep - 1].tekst}</p>
           </div>
 
           {/* Footer */}
-          <div className="flex justify-between items-center border-t border-green-100 flex-shrink-0" style={{ padding: `${8 * guideScale}px ${16 * guideScale}px ${12 * guideScale}px` }}>
+          <div className="flex justify-between items-center border-t border-red-100 flex-shrink-0" style={{ padding: `${8 * guideScale}px ${16 * guideScale}px ${12 * guideScale}px` }}>
             <div className="flex" style={{ gap: 4 * guideScale }}>
               {GUIDE_STEPS.map((_, i) => (
-                <div key={i} className={`rounded-full transition-all ${i + 1 === guideStep ? 'bg-green-600 scale-125' : i + 1 < guideStep ? 'bg-green-400' : 'bg-gray-200'}`}
+                <div key={i} className={`rounded-full transition-all ${i + 1 === guideStep ? 'bg-[#c90b0e] scale-125' : i + 1 < guideStep ? 'bg-[#c90b0e]/60' : 'bg-gray-200'}`}
                      style={{ width: 8 * guideScale, height: 8 * guideScale }} />
               ))}
             </div>
@@ -7898,7 +9374,7 @@ export default function App() {
                 </button>
               )}
               {guideStep < GUIDE_STEPS.length ? (
-                <button onClick={() => { const next = guideStep + 1; setGuideStep(next); setActiveTab(GUIDE_STEPS[next - 1].tab); setGuideDrag({ x: 0, y: 0 }); }} className="bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors shadow-sm" style={{ fontSize: 11 * guideScale, padding: `${4 * guideScale}px ${12 * guideScale}px` }}>
+                <button onClick={() => { const next = guideStep + 1; setGuideStep(next); setActiveTab(GUIDE_STEPS[next - 1].tab); setGuideDrag({ x: 0, y: 0 }); }} className="bg-[#c90b0e] text-white font-bold rounded-lg hover:bg-[#9c0f06] transition-colors shadow-sm" style={{ fontSize: 11 * guideScale, padding: `${4 * guideScale}px ${12 * guideScale}px` }}>
                   {[
                     'Giv bolden op! →',
                     'Drible fremad →',
@@ -7910,7 +9386,7 @@ export default function App() {
                   ][guideStep - 1] || 'Fremad →'}
                 </button>
               ) : (
-                <button onClick={() => setGuideStep(null)} className="bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors shadow-sm" style={{ fontSize: 12 * guideScale, padding: `${5 * guideScale}px ${14 * guideScale}px` }}>
+                <button onClick={() => setGuideStep(null)} className="bg-[#c90b0e] text-white font-bold rounded-lg hover:bg-[#9c0f06] transition-colors shadow-sm" style={{ fontSize: 12 * guideScale, padding: `${5 * guideScale}px ${14 * guideScale}px` }}>
                   Fløjt! Kampen er slut ⚽
                 </button>
               )}
